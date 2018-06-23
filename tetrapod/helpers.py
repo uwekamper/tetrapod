@@ -39,6 +39,13 @@ from collections.abc import Mapping
 
 # app:
 #   value: The id of the app item
+def fetch_app_field(field, field_param=None):
+    if field_param is None:
+        for value in field.get('values', []):
+            return value['value']
+    elif field_param == 'all':
+        return [v['value'] for v in field.get('values', [])]
+    return None
 
 # date:
 #   start_date: The start date
@@ -100,12 +107,14 @@ def fetch_field(field_descriptor, item_json):
         field_param = None
     fields = item_json.get('fields', [])
     for field in fields:
-        if field['external_id'] == field_descriptor:
+        if field['external_id'] == external_id:
             field_type = field['type']
             if field_type == 'text':
                 return fetch_text_field(field, field_param)
             elif field_type == 'category':
                 return fetch_category_field(field, field_param)
+            elif field_type == 'app':
+                return fetch_app_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None

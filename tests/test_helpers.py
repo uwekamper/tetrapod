@@ -34,17 +34,27 @@ class TestFetchField(TestCase):
         )
 
     def test_fetch_category_field(self):
-        self.assertEquals(
+        self.assertEqual(
             "Accepted",
             fetch_field('status2', self.test_item)['text']
         )
-        self.assertEquals(
+        self.assertEqual(
             2,
             fetch_field('status2', self.test_item)['id']
         )
-        self.assertEquals(
+        self.assertEqual(
             "DCEBD8",
             fetch_field('status2', self.test_item)['color']
+        )
+
+    def test_fetch_app_field(self):
+        self.assertEqual(
+            503454054,
+            fetch_field('projects', self.test_item)['item_id']
+        )
+        self.assertEqual(
+            503454054,
+            fetch_field('projects__all', self.test_item)[0]['item_id']
         )
 
 class TestItem(TestCase):
