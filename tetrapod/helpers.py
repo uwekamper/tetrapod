@@ -90,6 +90,13 @@ def fetch_category_field(field, field_param=None):
 #   type: "mobile"/"work"/"home"/"main"/"work_fax"/"private_fax"/ "other"
 #   value: string value  (max 50 characters)
 
+# calculation:
+def fetch_calculation_field(field, field_param=None):
+    if field_param is None:
+        for value in field.get('values', []):
+            return value['value']
+    return None
+
 
 def fetch_field(field_descriptor, item_json):
     """
@@ -114,6 +121,8 @@ def fetch_field(field_descriptor, item_json):
             elif field_type == 'category':
                 return fetch_category_field(field, field_param)
             elif field_type == 'app':
+                return fetch_app_field(field, field_param)
+            elif field_type == 'calculation':
                 return fetch_app_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)

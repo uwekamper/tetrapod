@@ -57,6 +57,12 @@ class TestFetchField(TestCase):
             fetch_field('projects__all', self.test_item)[0]['item_id']
         )
 
+    def test_fetch_calculation_field(self):
+        self.assertEqual(
+            "Hello,  John Doe",
+            fetch_field('calc', self.test_item)
+        )
+
 class TestItem(TestCase):
 
     def setUp(self):
