@@ -71,7 +71,7 @@ def fetch_text_field(field, field_param=None):
 # category:
 #   value: The id of the option
 def fetch_category_field(field, field_param=None):
-    if field_param is None:
+    if field_param == 'active':
         val = field.get('values', [None])[0]
         if val is not None:
             return val['value']
@@ -82,6 +82,12 @@ def fetch_category_field(field, field_param=None):
         for v in field.get('values', []):
             values.append(v.get('value'))
         return values
+    elif field_param is None:
+        val = field.get('values', [None])[0]
+        if val is not None:
+            return val['value']['text']
+        else:
+            return None
 # email:
 #   value: Text value (max 254 characters)
 #   type: "home"/"work"/ "other"
@@ -113,6 +119,8 @@ def fetch_field(field_descriptor, item_json):
         external_id = descriptor_parts[0]
         field_param = None
     fields = item_json.get('fields', [])
+    if '_' in external_id:
+        external_id = external_id.replace('_', '-')
     for field in fields:
         if field['external_id'] == external_id:
             field_type = field['type']

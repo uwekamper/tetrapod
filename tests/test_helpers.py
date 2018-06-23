@@ -20,6 +20,12 @@ class TestFetchField(TestCase):
             fetch_field('does_not_exist', self.test_item)
         )
 
+    def test_get_field_with_underscore(self):
+        self.assertEquals(
+            'Go',
+            fetch_field('do_it', self.test_item)
+        )
+
     def test_get_text_field(self):
         self.assertEquals(
             "Bow of boat",
@@ -36,15 +42,19 @@ class TestFetchField(TestCase):
     def test_fetch_category_field(self):
         self.assertEqual(
             "Accepted",
-            fetch_field('status2', self.test_item)['text']
+            fetch_field('status2', self.test_item)
+        )
+        self.assertEqual(
+            "Accepted",
+            fetch_field('status2__active', self.test_item)['text']
         )
         self.assertEqual(
             2,
-            fetch_field('status2', self.test_item)['id']
+            fetch_field('status2__active', self.test_item)['id']
         )
         self.assertEqual(
             "DCEBD8",
-            fetch_field('status2', self.test_item)['color']
+            fetch_field('status2__active', self.test_item)['color']
         )
 
     def test_fetch_app_field(self):
