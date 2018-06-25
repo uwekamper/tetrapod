@@ -73,6 +73,7 @@ class TestFetchField(TestCase):
             fetch_field('calc', self.test_item)
         )
 
+
 class TestItem(TestCase):
 
     def setUp(self):
