@@ -158,6 +158,19 @@ class BaseItem(Mapping):
     def item_id__str(self):
         return '%d' % self.item_id
 
+    @property
+    def unique_id(self):
+        return int(self.get_item_data()['link'].rsplit('/', 1)[1])
+
+    @property
+    def unique_id__str(self):
+        return '%d' % self.get_item_data()['link'].rsplit('/', 1)[1]
+
+    @property
+    def link(self):
+        return self.get_item_data()['link']
+
+
 
 class Item(BaseItem):
 
