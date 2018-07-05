@@ -164,7 +164,7 @@ class BaseItem(Mapping):
 
     @property
     def unique_id__str(self):
-        return '%d' % self.get_item_data()['link'].rsplit('/', 1)[1]
+        return self.get_item_data()['link'].rsplit('/', 1)[1]
 
     @property
     def link(self):
