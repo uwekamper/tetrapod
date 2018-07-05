@@ -150,6 +150,14 @@ class BaseItem(Mapping):
     def get_item_data(self):
         raise NotImplementedError()
 
+    @property
+    def item_id(self):
+        return self.get_item_data()['item_id']
+
+    @property
+    def item_id__str(self):
+        return '%d' % self.item_id
+
 
 class Item(BaseItem):
 
