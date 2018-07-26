@@ -80,9 +80,16 @@ class TestFetchField(TestCase):
             fetch_field('date', self.test_item)
         )
         self.assertEqual(
-            datetime.datetime(2018, 7, 27),
+            datetime.datetime(2018, 7, 27, 1, 0),
             fetch_field('date__datetime', self.test_item)
         )
+
+    def test_fetch_embed_field(self):
+        self.assertEqual(
+            "http://www.newsletter-webversion.de/?c=0-v0yw-0-11xa&utm_source=newsletter&utm_medium=email&utm_campaign=02%2F2017+DT&newsletter=02%2F2017+DT",
+            fetch_field('embed', self.test_item)
+        )
+
 
 
 class TestItem(TestCase):

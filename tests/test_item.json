@@ -1003,6 +1003,56 @@
       },
       "external_id": "calc"
     },
+
+
+        {
+      "status": "active",
+      "type": "embed",
+      "field_id": 165394195,
+      "label": "embed",
+      "values": [{"embed": {"description": null,
+                       "embed_height": null,
+                       "embed_html": null,
+                       "embed_id": 442191300,
+                       "embed_width": null,
+                       "hostname": "newsletter-webversion.de",
+                       "original_url": "http://www.newsletter-webversion.de/?c=0-v0yw-0-11xa&utm_source=newsletter&utm_medium=email&utm_campaign=02%2F2017+DT&newsletter=02%2F2017+DT",
+                       "resolved_url": "http://www.newsletter-webversion.de/?c=0-v0yw-0-11xa&utm_source=newsletter&utm_medium=email&utm_campaign=02%2F2017+DT&newsletter=02%2F2017+DT",
+                       "title": "http://www.newsletter-webversion.de/?c=0-v0yw-0-11xa&utm_source=newsletter&utm_medium=email&utm_campaign=02%2F2017+DT&newsletter=02%2F2017+DT",
+                       "type": "link",
+                       "url": "http://www.newsletter-webversion.de/?c=0-v0yw-0-11xa&utm_source=newsletter&utm_medium=email&utm_campaign=02%2F2017+DT&newsletter=02%2F2017+DT"},
+             "file": {"external_file_id": null,
+                      "file_id": 622255932,
+                      "hosted_by": "podio",
+                      "hosted_by_humanized_name": "Podio",
+                      "link": "https://files.podio.com/622255932",
+                      "link_target": "_blank",
+                      "thumbnail_link": "https://files.podio.com/622255932"}}
+      ],
+      "config": {
+        "default_value": null,
+        "unique": false,
+        "description": null,
+        "hidden_create_view_edit": false,
+        "required": false,
+        "mapping": null,
+        "label": "embed",
+        "visible": true,
+        "delta": 4,
+        "hidden": false,
+        "settings": {
+          "color": null,
+          "expression": null,
+          "time": null,
+          "calendar": null,
+          "decimals": null,
+          "return_type": "text",
+          "unit": null
+        }
+      },
+      "external_id": "embed"
+    },
+
     {
       "status": "active",
       "type": "date",

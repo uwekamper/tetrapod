@@ -6,6 +6,15 @@ from collections.abc import Mapping
 # embed:
 #   embed: The id of an embed returned from the Add an embed operation.
 #   file: The id of one the thumbnail files returned from the same operation.
+def fetch_embed_field(field, field_param=None):
+    if field_param is None:
+        for value in field.get('values', []):
+            return value['embed']['url']
+    elif field_param == 'all':
+        return [v['embed']['url'] for v in field.get('values', [])]
+    return None
+
+
 # duration:
 #   value: The duration in seconds
 
@@ -144,6 +153,8 @@ def fetch_field(field_descriptor, item_json):
                 return fetch_calculation_field(field, field_param)
             elif field_type == 'date':
                 return fetch_date_field(field, field_param)
+            elif field_type == 'embed':
+                return fetch_embed_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None
