@@ -1,6 +1,7 @@
 import json
 import os
 from unittest import TestCase
+import datetime
 
 from tetrapod.helpers import (
     fetch_field,
@@ -71,6 +72,16 @@ class TestFetchField(TestCase):
         self.assertEqual(
             "Hello,  John Doe",
             fetch_field('calc', self.test_item)
+        )
+
+    def test_fetch_date_field(self):
+        self.assertEqual(
+            '2018-07-27 01:00:00',
+            fetch_field('date', self.test_item)
+        )
+        self.assertEqual(
+            datetime.datetime(2018, 7, 27),
+            fetch_field('date__datetime', self.test_item)
         )
 
 

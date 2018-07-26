@@ -1005,6 +1005,44 @@
     },
     {
       "status": "active",
+      "type": "date",
+      "field_id": 165394195,
+      "label": "date",
+      "values": [
+        {
+          "start": "2018-07-27 01:00:00",
+          "start_date": "2018-07-27",
+          "start_date_utc": "2018-07-27",
+          "start_time": "01:00:00",
+          "start_time_utc": "01:00:00",
+          "start_utc": "2018-07-27"
+        }
+      ],
+      "config": {
+        "default_value": null,
+        "unique": false,
+        "description": null,
+        "hidden_create_view_edit": false,
+        "required": false,
+        "mapping": null,
+        "label": "date",
+        "visible": true,
+        "delta": 4,
+        "hidden": false,
+        "settings": {
+          "color": null,
+          "expression": null,
+          "time": null,
+          "calendar": null,
+          "decimals": null,
+          "return_type": "text",
+          "unit": null
+        }
+      },
+      "external_id": "date"
+    },
+    {
+      "status": "active",
       "type": "category",
       "field_id": 133148967,
       "label": "Status",

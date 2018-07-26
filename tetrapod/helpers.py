@@ -1,6 +1,6 @@
 import math
 import time
-
+import datetime
 from collections.abc import Mapping
 
 # embed:
@@ -52,6 +52,16 @@ def fetch_app_field(field, field_param=None):
 #   start_time: The start time
 #   end_date: The end date
 #   end_time: The end time
+def fetch_date_field(field, field_param=None):
+    if field_param is None:
+        for value in field.get('values', []):
+            return value['start']
+    if field_param == 'datetime':
+        for value in field.get('values', []):
+            date_str = value['start']
+            return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+
+    return None
 
 # image:
 #   value: The file id of the image file
@@ -131,7 +141,9 @@ def fetch_field(field_descriptor, item_json):
             elif field_type == 'app':
                 return fetch_app_field(field, field_param)
             elif field_type == 'calculation':
-                return fetch_app_field(field, field_param)
+                return fetch_calculation_field(field, field_param)
+            elif field_type == 'date':
+                return fetch_date_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None
