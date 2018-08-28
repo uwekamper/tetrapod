@@ -110,6 +110,28 @@ def fetch_category_field(field, field_param=None):
 # email:
 #   value: Text value (max 254 characters)
 #   type: "home"/"work"/ "other"
+def fetch_email_field(field, field_param=None):
+    """
+    email: only the first value is returned
+    email__all: [{"type": "work", "value": "xyz@example.com"}]
+    email__work/home/other: The first value of the particular type is returned.
+    """
+    if field_param == 'all':
+        vals = field.get('values', [])
+        return vals
+    elif field_param in ['work', 'home', 'other']:
+        vals = field.get('values', None)
+        if vals is None:
+            return None
+        for val in vals:
+            if val.get('type') == field_param:
+                return val.get('value')
+    elif field_param is None:
+        val = field.get('values', [None])[0]
+        if val is not None:
+            return val.get('value')
+        else:
+            return None
 
 # phone:
 #   type: "mobile"/"work"/"home"/"main"/"work_fax"/"private_fax"/ "other"
@@ -155,6 +177,8 @@ def fetch_field(field_descriptor, item_json):
                 return fetch_date_field(field, field_param)
             elif field_type == 'embed':
                 return fetch_embed_field(field, field_param)
+            elif field_type == 'email':
+                return fetch_email_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None
@@ -192,7 +216,6 @@ class BaseItem(Mapping):
     @property
     def link(self):
         return self.get_item_data()['link']
-
 
 
 class Item(BaseItem):

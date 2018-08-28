@@ -129,34 +129,36 @@ def deploy(space_name):
     app_name = config['project']['apps']
     app_section = '{}.{}'.format(space_name, app_name)
     app_id = config[app_section]['app_id']
-    fields = config[app_section]['fields']
-    field_section = '{}.{}.{}'.format(space_name, app_name, fields)
-    field_id = config[field_section]['field_id']
-    with open(config[field_section]['script'], mode='r') as script_file:
-        field_script = script_file.read()
-    with open(config[field_section]['settings'], mode='r') as settings_file:
-        field_settings = json.load(settings_file)
+    fields_raw = config[app_section]['fields']
+    fields_all = [f.strip() for f in fields_raw.split(',')]
+    for fields in fields_all:
+        field_section = '{}.{}.{}'.format(space_name, app_name, fields)
+        field_id = config[field_section]['field_id']
+        with open(config[field_section]['script'], mode='r') as script_file:
+            field_script = script_file.read()
+        with open(config[field_section]['settings'], mode='r') as settings_file:
+            field_settings = json.load(settings_file)
 
-    # Now we got everything to makte the request:
-    payload = glom(field_settings, {
-        "label": 'label',
-        "description": 'config.description',
-        "delta": 'config.delta',
-        "settings": 'config.settings',
-        "mapping": 'config.mapping',
-        "required": 'config.required',
-        "hidden_create_view_edit": 'config.hidden_create_view_edit',
-    })
-    payload['settings']['script'] = field_script
-    print(json.dumps(payload, indent=2))
+        # Now we got everything to makte the request:
+        payload = glom(field_settings, {
+            "label": 'label',
+            "description": 'config.description',
+            "delta": 'config.delta',
+            "settings": 'config.settings',
+            "mapping": 'config.mapping',
+            "required": 'config.required',
+            "hidden_create_view_edit": 'config.hidden_create_view_edit',
+        })
+        payload['settings']['script'] = field_script
+        print(json.dumps(payload, indent=2))
 
-    # Upload the payload
-    podio = create_podio_session()
-    url = 'https://api.podio.com/app/{:d}/field/{:d}'.format(int(app_id), int(field_id))
-    print(url)
-    resp = podio.put(url, data=json.dumps(payload))
-    print(resp.status_code)
-    print(json.dumps(resp.json(), indent=2))
+        # Upload the payload
+        podio = create_podio_session()
+        url = 'https://api.podio.com/app/{:d}/field/{:d}'.format(int(app_id), int(field_id))
+        print(url)
+        resp = podio.put(url, data=json.dumps(payload))
+        print(resp.status_code)
+        print(json.dumps(resp.json(), indent=2))
 
 cli.add_command(init)
 cli.add_command(orgs)
