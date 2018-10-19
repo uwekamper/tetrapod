@@ -160,13 +160,24 @@ def deploy(space_name):
         print(resp.status_code)
         print(json.dumps(resp.json(), indent=2))
 
+
+@click.command(help="Get user info")
+@click.argument('user_id')
+def user(user_id):
+    podio = create_podio_session()
+    url = 'https://api.podio.com/user/{:d}'.format(int(user_id))
+    print(url)
+    resp = podio.get(url)
+    print(resp.status_code)
+    print(json.dumps(resp.json(), indent=2))
+
 cli.add_command(init)
 cli.add_command(orgs)
 cli.add_command(spaces)
 cli.add_command(apps)
 cli.add_command(add_app)
 cli.add_command(deploy)
-
+cli.add_command(user)
 
 if __name__ == '__main__':
     cli()

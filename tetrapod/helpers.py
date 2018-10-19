@@ -227,6 +227,48 @@ class Item(BaseItem):
         return self.item_data
 
 
+def iterate_array(client, url, http_method='GET', limit=100, offset=0, params=None):
+    """
+    Get a list of objects from the Podio API and provide a generator to iterate
+    over these items. Use this for 
+
+    e.g. to read all the items of one app use:
+
+        url = 'https://api.podio.com/comment/item/{}/'.format(item_id)
+        for item in iterate_array(client, url, 'GET'):
+            print(item)
+    """
+    if params is None:
+        params = dict(limit=limit, offset=offset)
+    else:
+        params['limit'] = limit
+        params['offset'] = offset
+        
+    do_requests = True
+    while do_requests == True:
+        if http_method == 'POST':
+            api_resp = client.post(url, data=params)
+        elif http_method == 'GET':
+            api_resp = client.get(url, params=params)
+        else:
+            raise Exception("Method not supported.")
+        
+        if api_resp.status_code != 200:
+            raise Exception('Podio API response was bad: {}'.format(api_resp.content))
+            
+        resp = api_resp.json()
+        num_entries = len(resp)
+        if num_entries < limit or num_entries <= 0:
+            do_requests = False
+
+        params['offset'] += limit
+        
+        for entry in resp:
+            yield entry
+    
+    
+    
+
 def iterate_resource(client, url, http_method='POST', limit=30, offset=0, params=None):
     """
     Get a list of items from the Podio API and provide a generator to iterate
