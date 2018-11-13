@@ -101,6 +101,13 @@ def fetch_category_field(field, field_param=None):
         for v in field.get('values', []):
             values.append(v.get('value'))
         return values
+    elif field_param == 'labels':
+        values = []
+        for v in field.get('values', []):
+            podval = v.get('value')
+            if podval is not None:
+                values.append(podval['text'])
+        return values
     elif field_param is None:
         val = field.get('values', [None])[0]
         if val is not None:
