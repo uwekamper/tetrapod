@@ -130,15 +130,17 @@ def authorize(client_id, client_secret=None):
     return token
 
 
-def make_client(client_id, token, check=True):
-    expires_at = datetime.datetime.utcfromtimestamp(token['expires_at'])
-
-    token['expires_in'] = (expires_at - datetime.datetime.utcnow()).total_seconds()
+def make_client(client_id, token, check=True, client_token=None):
+    expires_at = datetime.datetime.utcfromtimestamp(token.get('expires_at', None))
+    if expires_at != None:
+        token['expires_in'] = (expires_at - datetime.datetime.utcnow()).total_seconds()
     #client = OAuth2Session(client_id, token=token)
     extra = {
-        'client_id': client_id,
-        'client_token': 'MAqHHrNIkbJdZ1xIL4xMR0TXuUqXgXW6ayQENhXT0kIcwFEi9wybBGWgd5d1ezV3'
+        'client_id': client_id
     }
+    if client_token != None:
+        extra['client_token'] = client_token
+    
     client = OAuth2Session(client_id, token=token, auto_refresh_url=REFRESH_URL,
                            auto_refresh_kwargs=extra, token_updater=save_token)
     if check is True:
