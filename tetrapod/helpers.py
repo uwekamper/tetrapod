@@ -45,9 +45,6 @@ def fetch_embed_field(field, field_param=None):
 
 # contact:
 #   value: The profile id of the contact
-
-# member:
-#   value: The user id of the member
 # Example
 # {
 #   "user_id": 1234567,
@@ -82,13 +79,17 @@ def fetch_embed_field(field, field_param=None):
 #   "last_seen_on": "2018-11-11 11:11:00",
 #   "name": "John Doe"
 # }
-def fetch_member_field(field, field_param=None):
+def fetch_contact_field(field, field_param=None):
     if field_param is None:
         for value in field.get('values', []):
             return value['value']
     elif field_param == 'all':
         return [v['value'] for v in field.get('values', [])]
     return None
+
+# member:
+#   value: The user id of the member
+
 
 # app:
 #   value: The id of the app item
@@ -230,8 +231,8 @@ def fetch_field(field_descriptor, item_json):
                 return fetch_embed_field(field, field_param)
             elif field_type == 'email':
                 return fetch_email_field(field, field_param)
-            elif field_type == 'member':
-                return fetch_member_field(field, field_param)
+            elif field_type == 'contact':
+                return fetch_contact_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None
