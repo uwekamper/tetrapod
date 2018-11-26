@@ -1,7 +1,10 @@
 import math
 import time
 import datetime
+import logging
 from collections.abc import Mapping
+
+log = logging.getLogger(__name__)
 
 # embed:
 #   embed: The id of an embed returned from the Add an embed operation.
@@ -45,6 +48,47 @@ def fetch_embed_field(field, field_param=None):
 
 # member:
 #   value: The user id of the member
+# Example
+# {
+#   "user_id": 1234567,
+#   "space_id": null,
+#   "rights": [
+#     "view"
+#   ],
+#   "url": [
+#     "http://example.com"
+#   ],
+#   "type": "user",
+#   "image": {
+#     "hosted_by": "podio",
+#     "hosted_by_humanized_name": "Podio",
+#     "thumbnail_link": "https://d2cmuesa4snpwn.cloudfront.net/public/123456789",
+#     "link": "https://d2cmuesa4snpwn.cloudfront.net/public/123456789",
+#     "file_id": 123456789,
+#     "external_file_id": null,
+#     "link_target": "_blank"
+#   },
+#   "profile_id": 123456789,
+#   "org_id": null,
+#   "phone": [
+#     "+xxxxxxxxxx"
+#   ],
+#   "link": "https://podio.com/users/1234567",
+#   "avatar": 123456789,
+#   "mail": [
+#     "john@example.com"
+#   ],
+#   "external_id": null,
+#   "last_seen_on": "2018-11-11 11:11:00",
+#   "name": "John Doe"
+# }
+def fetch_member_field(field, field_param=None):
+    if field_param is None:
+        for value in field.get('values', []):
+            return value['value']
+    elif field_param == 'all':
+        return [v['value'] for v in field.get('values', [])]
+    return None
 
 # app:
 #   value: The id of the app item
@@ -186,6 +230,8 @@ def fetch_field(field_descriptor, item_json):
                 return fetch_embed_field(field, field_param)
             elif field_type == 'email':
                 return fetch_email_field(field, field_param)
+            elif field_type == 'member':
+                return fetch_member_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None
@@ -276,7 +322,7 @@ def iterate_array(client, url, http_method='GET', limit=100, offset=0, params=No
     
     
 
-def iterate_resource(client, url, http_method='POST', limit=30, offset=0, params=None):
+def iterate_resource(client, url, http_method='POST', limit=500, offset=0, params=None):
     """
     Get a list of items from the Podio API and provide a generator to iterate
     over these items.
@@ -308,7 +354,7 @@ def iterate_resource(client, url, http_method='POST', limit=30, offset=0, params
         yield item
 
     total = resp['total']
-    print('offset: {}, total: {}, '.format(offset, total))
+    log.debug('offset: {}, total: {}, '.format(offset, total))
     steps_left = []
     if total > limit:
         num_steps = int(math.ceil(total / limit))
@@ -317,7 +363,7 @@ def iterate_resource(client, url, http_method='POST', limit=30, offset=0, params
         steps_left = steps[1:]
 
     for curr_offset in steps_left:
-        print('offset: {}, total: {}, waiting ...'.format(curr_offset, total))
+        log.debug('offset: {}, total: {}, waiting ...'.format(curr_offset, total))
         time.sleep(2.0)
         params['limit'] = limit
         params['offset'] = offset
