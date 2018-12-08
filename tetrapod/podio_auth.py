@@ -3,6 +3,7 @@ import json
 import click
 import os
 import datetime
+import requests
 from urllib.parse import parse_qs
 from oauthlib.oauth2 import MobileApplicationClient, TokenExpiredError
 from requests_oauthlib import OAuth2Session
@@ -12,6 +13,7 @@ from http.server import HTTPServer
 AUTHORIZATION_BASE_URL = 'https://podio.com/oauth/authorize'
 TOKEN_URL = 'https://podio.com/oauth/access_token'
 REFRESH_URL = 'https://podio.com/oauth/authorize'
+APP_AUTH_TOKEN_URL = 'https://podio.com/oauth/token' # https://developers.podio.com/authentication/app_auth
 KEEP_RUNNING = True
 
 credentials = None
@@ -154,6 +156,21 @@ def make_client(client_id, token, check=True, client_token=None):
         #    client = OAuth2Session(client_id, token=new_token)
         #    r = client.get('https://api.podio.com/user/profile/')
         print('Logged in as "{}"'.format(r.json()['name']))
+    return client
+
+
+def make_app_auth_client(client_id, client_secret, app_id, app_token):
+    token_resp = requests.post(APP_AUTH_TOKEN_URL, data={
+        "grant_type": "app",
+        "app_id": "%s" % app_id,
+        "app_token": "%s" % app_token,
+        "client_id": "%s" % client_id,
+        "client_secret": "%s" % client_secret,
+    })
+    token_resp.raise_for_status()
+    token = token_resp.json()
+
+    client = OAuth2Session(client_id, token=token)
     return client
 
 

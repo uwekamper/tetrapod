@@ -194,6 +194,7 @@ def fetch_calculation_field(field, field_param=None):
     if field_param is None:
         for value in field.get('values', []):
             return value['value']
+
     return None
 
 
