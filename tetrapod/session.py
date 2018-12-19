@@ -30,7 +30,10 @@ def create_podio_session(credentials_file=None, credentials=None, check=True):
     token = try_environment_token()
     if token is None:
         log.info('Loading OAuth2 token from credentials file.')
-        token = podio_auth.load_token()
+        if credentials_file is None:
+            token = podio_auth.load_token()
+        else:
+            token = podio_auth.load_token(credentials_file)
     podio = podio_auth.make_client(token['client_id'], token)
     return podio
 

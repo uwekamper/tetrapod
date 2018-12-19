@@ -182,7 +182,11 @@ def save_token(token):
         json.dump(token, fh, indent=2, sort_keys=True)
 
 
-def load_token():
-    with open('.tetrapod_credentials.json', mode='r') as fh:
+def load_token(token_filename=None):
+    if token_filename is None:
+        fname = '.tetrapod_credentials.json'
+    else:
+        fname = token_filename
+    with open(fname, mode='r') as fh:
         token = json.load(fh)
         return token
