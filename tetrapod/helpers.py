@@ -3,6 +3,7 @@ import time
 import datetime
 import logging
 from collections.abc import Mapping
+from decimal import Decimal
 
 log = logging.getLogger(__name__)
 
@@ -122,6 +123,18 @@ def fetch_date_field(field, field_param=None):
 
 # number:
 #   value: The decimal value of the field as a string.
+def fetch_number_field(field, field_param=None):
+    if field_param is None:
+        for value in field.get('values', []):
+            return Decimal(value['value'])
+    if field_param == 'int':
+        for value in field.get('values', []):
+            return int(Decimal(value['value']).to_integral())
+    if field_param == 'float':
+        for value in field.get('values', []):
+            return float(Decimal(value['value']))
+    return None
+
 
 # text:
 #   value: The value of the field which can be any length.
@@ -234,6 +247,8 @@ def fetch_field(field_descriptor, item_json):
                 return fetch_email_field(field, field_param)
             elif field_type == 'contact':
                 return fetch_contact_field(field, field_param)
+            elif field_type == 'number':
+                return fetch_number_field(field, field_param)
             else:
                 raise NotImplementedError('Field type %s not supported' % field_type)
     return None
@@ -342,7 +357,7 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
         params['offset'] = offset
 
     if http_method == 'POST':
-        api_resp = client.post(url, data=params)
+        api_resp = client.post(url, json=params)
     elif http_method == 'GET':
         api_resp = client.get(url, params=params)
     else:
@@ -370,7 +385,7 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
         params['limit'] = limit
         params['offset'] = offset
         if http_method == 'POST':
-            api_resp = client.post(url, data=params)
+            api_resp = client.post(url, json=params)
         else: # method == 'GET'
             api_resp = client.get(url, params=params)
 
