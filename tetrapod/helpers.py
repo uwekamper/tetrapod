@@ -205,6 +205,14 @@ def fetch_email_field(field, field_param=None):
 # calculation:
 def fetch_calculation_field(field, field_param=None):
     if field_param is None:
+        # Dates are special
+        if field['config']['settings'].get('return_type') == 'date':
+            for value in field.get('values', []):
+                dt = datetime.datetime.strptime(value['start'], '%Y-%m-%d %H:%M:%S')
+                if field_param == 'datetime':
+                    return dt
+                else:
+                    return '{}'.format(dt)
         for value in field.get('values', []):
             return value['value']
 
