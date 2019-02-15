@@ -308,6 +308,7 @@ def iterate_array(client, url, http_method='GET', limit=100, offset=0, params=No
         for item in iterate_array(client, url, 'GET'):
             print(item)
     """
+    all_elements = []
     if params is None:
         params = dict(limit=limit, offset=offset)
     else:
@@ -333,9 +334,9 @@ def iterate_array(client, url, http_method='GET', limit=100, offset=0, params=No
 
         params['offset'] += limit
         
-        for entry in resp:
-            yield entry
-    
+        all_elements.extend(resp) 
+    # print(f"array of {len(all_elements)}")
+    return all_elements
     
     
 
@@ -366,12 +367,13 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
     if api_resp.status_code != 200:
         raise Exception('Podio API response was bad: {}'.format(api_resp.content))
 
+    all_items = []
     resp = api_resp.json()
-    for item in resp['items']:
-        yield item
+    print(f"Got {len(resp['items'])} ...")
+    all_items.extend(resp['items'])
 
     total = resp['total']
-    log.debug('offset: {}, total: {}, '.format(offset, total))
+    print('offset: {}, total: {}, '.format(offset, total))
     steps_left = []
     if total > limit:
         num_steps = int(math.ceil(total / limit))
@@ -380,10 +382,9 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
         steps_left = steps[1:]
 
     for curr_offset in steps_left:
-        log.debug('offset: {}, total: {}, waiting ...'.format(curr_offset, total))
-        time.sleep(2.0)
+        print('offset: {}, total: {}, waiting ...'.format(curr_offset, total))
         params['limit'] = limit
-        params['offset'] = offset
+        params['offset'] = curr_offset
         if http_method == 'POST':
             api_resp = client.post(url, json=params)
         else: # method == 'GET'
@@ -392,5 +393,7 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
         if api_resp.status_code != 200:
             raise Exception('Podio API response was bad: {}'.format(api_resp.content))
         resp = api_resp.json()
-        for item_data in resp['items']:
-            yield item_data
+        all_items.extend( resp['items'] )
+
+    print("Got all items!") 
+    return all_items
