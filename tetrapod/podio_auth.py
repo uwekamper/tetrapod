@@ -155,7 +155,7 @@ def make_client(client_id, token, check=True, client_token=None):
         #    save_token(new_token)
         #    client = OAuth2Session(client_id, token=new_token)
         #    r = client.get('https://api.podio.com/user/profile/')
-        print('Logged in as "{}"'.format(r.json()['name']))
+        # print('Logged in as "{}"'.format(r.json()['name']))
     return client
 
 
