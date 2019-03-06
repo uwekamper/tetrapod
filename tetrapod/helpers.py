@@ -148,7 +148,11 @@ def fetch_text_field(field, field_param=None):
 # category:
 #   value: The id of the option
 def fetch_category_field(field, field_param=None):
-    if field_param == 'active':
+    if field_param == 'choices':
+        options = field['config']['settings']['options']
+        # inactive options are not show to the user
+        return [(opt['id'], opt['text']) for opt in options if opt['status'] == 'active']
+    elif field_param == 'active':
         val = field.get('values', [None])[0]
         if val is not None:
             return val['value']

@@ -42,6 +42,10 @@ class TestFetchField(TestCase):
 
     def test_fetch_category_field(self):
         self.assertEqual(
+            [(1, "Entered"), (2, "Accepted"), (3, "Rejected")],
+            fetch_field('status2__choices', self.test_item)
+        )
+        self.assertEqual(
             "Accepted",
             fetch_field('status2', self.test_item)
         )
