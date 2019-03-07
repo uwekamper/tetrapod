@@ -34,7 +34,7 @@ def create_podio_session(credentials_file=None, credentials=None, check=True):
             token = podio_auth.load_token()
         else:
             token = podio_auth.load_token(credentials_file)
-    podio = podio_auth.make_client(token['client_id'], token)
+    podio = podio_auth.make_client(token['client_id'], token, check=check)
     return podio
 
 
