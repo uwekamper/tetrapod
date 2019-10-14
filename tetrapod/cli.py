@@ -7,8 +7,8 @@ import configparser
 import json
 import os
 
-from glom import glom
 from pathlib import Path
+
 from tetrapod import podio_auth
 from tetrapod.session import create_podio_session
 
@@ -140,15 +140,15 @@ def deploy(space_name):
             field_settings = json.load(settings_file)
 
         # Now we got everything to makte the request:
-        payload = glom(field_settings, {
-            "label": 'label',
-            "description": 'config.description',
-            "delta": 'config.delta',
-            "settings": 'config.settings',
-            "mapping": 'config.mapping',
-            "required": 'config.required',
-            "hidden_create_view_edit": 'config.hidden_create_view_edit',
-        })
+        payload = {
+            "label": field_settings['label'],
+            "description": field_settings['config']['description'],
+            "delta": field_settings['config']['delta'],
+            "settings": field_settings['config']['settings'],
+            "mapping": field_settings['config']['mapping'],
+            "required": field_settings['config']['required'],
+            "hidden_create_view_edit": field_settings['config']['hidden_create_view_edit'],
+        }
         payload['settings']['script'] = field_script
         print(json.dumps(payload, indent=2))
 

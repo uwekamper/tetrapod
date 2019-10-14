@@ -1,9 +1,14 @@
 import cgi
 import json
+
 import click
 import os
 import datetime
 import requests
+import logging
+import requests.exceptions
+
+from time import sleep
 from urllib.parse import parse_qs
 from oauthlib.oauth2 import MobileApplicationClient, TokenExpiredError
 from requests_oauthlib import OAuth2Session
@@ -17,6 +22,8 @@ APP_AUTH_TOKEN_URL = 'https://podio.com/oauth/token' # https://developers.podio.
 KEEP_RUNNING = True
 
 credentials = None
+
+log = logging.getLogger(__name__)
 
 
 def keep_running():
@@ -85,6 +92,70 @@ def MakeHandlerClass(client_id, client_secret=None):
     return CustomHandler
 
 
+class PodioOAuth2Session(OAuth2Session):
+    def __init__(self, client_id=None, client=None, auto_refresh_url=None,
+            auto_refresh_kwargs=None, scope=None, redirect_uri=None, token=None,
+            state=None, token_updater=None, enable_robustness=False, **kwargs):
+        super(PodioOAuth2Session, self).__init__(
+            client_id=client_id, client=client, auto_refresh_url=auto_refresh_url,
+            auto_refresh_kwargs=auto_refresh_kwargs, scope=scope, redirect_uri=redirect_uri,
+            token=token, state=state, token_updater=token_updater, **kwargs
+        )
+        self.enable_robustness = enable_robustness
+
+    def request(self, method, url, data=None, headers=None, withhold_token=False,
+                client_id=None, client_secret=None, **kwargs):
+        # the usual way of doing requests
+        if not self.enable_robustness:
+            return super(PodioOAuth2Session, self) \
+                .request(method, url,
+                         data=data, headers=headers, withhold_token=withhold_token,
+                         client_id=client_id, client_secret=client_secret, **kwargs)
+
+        # robust way that tries to deal with most of the data
+        retry_counter = 5
+        while True:
+            try:
+                response = super(PodioOAuth2Session, self)\
+                    .request(method, url,
+                             data=data, headers=headers, withhold_token=withhold_token,
+                             client_id=client_id, client_secret=client_secret, **kwargs)
+            except requests.exceptions.ConnectionError as err:
+                log.warning('ConnectionError while trying to access the Podio API.')
+                # Connection error means we wait one second and try again.
+                retry_counter -= 1
+                if retry_counter < 1:
+                    raise err
+                else:
+                    sleep(3.0)
+                    continue
+
+            # all retries have been used up. Return the response regardless of the status code.
+            if retry_counter < 1:
+                return response
+
+
+            # everything went well
+            if response.status_code < 400:
+                limit = response.headers.get('X-Rate-Limit-Limit')
+                remaining = response.headers.get('X-Rate-Limit-Remaining')
+                return response
+
+            # Most likely, we have encountered a 504 Gateway timeout error.
+            if 500 <= response.status_code < 600:
+                retry_counter -= 1
+                log.warning('Response from URL "%s" with status code %d. Retrying in 3 seconds ...')
+                sleep(3.0)
+                continue
+
+
+
+
+
+
+
+
+
 def authorize(client_id, client_secret=None):
     """
     :param client_id:
@@ -132,7 +203,7 @@ def authorize(client_id, client_secret=None):
     return token
 
 
-def make_client(client_id, token, check=True, client_token=None):
+def make_client(client_id, token, check=True, client_token=None, enable_robustness=False):
     expires_at = token.get('expires_at', None)
     if expires_at != None:
         expires_at_dt = datetime.datetime.utcfromtimestamp(expires_at)
@@ -144,8 +215,9 @@ def make_client(client_id, token, check=True, client_token=None):
     if client_token != None:
         extra['client_token'] = client_token
     
-    client = OAuth2Session(client_id, token=token, auto_refresh_url=REFRESH_URL,
-                           auto_refresh_kwargs=extra, token_updater=save_token)
+    client = PodioOAuth2Session(client_id, token=token, auto_refresh_url=REFRESH_URL,
+                                auto_refresh_kwargs=extra, token_updater=save_token,
+                                enable_robustness=enable_robustness)
     if check is True:
         r = client.get('https://api.podio.com/user/profile/')
         r.raise_for_status()

@@ -1,8 +1,10 @@
 import os
+import math
+import time
+import datetime
 import logging
 
 from . import podio_auth
-
 
 log = logging.getLogger(__file__)
 
@@ -26,7 +28,7 @@ def try_environment_token():
     }
 
 
-def create_podio_session(credentials_file=None, credentials=None, check=True):
+def create_podio_session(credentials_file=None, credentials=None, check=True, robust=False):
     token = try_environment_token()
     if token is None:
         log.info('Loading OAuth2 token from credentials file.')
@@ -34,7 +36,7 @@ def create_podio_session(credentials_file=None, credentials=None, check=True):
             token = podio_auth.load_token()
         else:
             token = podio_auth.load_token(credentials_file)
-    podio = podio_auth.make_client(token['client_id'], token, check=check)
+    podio = podio_auth.make_client(token['client_id'], token, check=check, enable_robustness=robust)
     return podio
 
 
