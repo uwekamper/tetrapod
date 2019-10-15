@@ -144,7 +144,7 @@ class PodioOAuth2Session(OAuth2Session):
             # Most likely, we have encountered a 504 Gateway timeout error.
             if 500 <= response.status_code < 600:
                 retry_counter -= 1
-                log.warning('Response from URL "%s" with status code %d. Retrying in 3 seconds ...')
+                log.warning('Response from URL "%s" with status code %d. Retrying in 3 seconds ...' % (url, response.status_code))
                 sleep(3.0)
                 continue
 
