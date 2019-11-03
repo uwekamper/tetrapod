@@ -394,6 +394,14 @@ class BaseItem(Mapping):
         raise NotImplementedError()
 
     @property
+    def app_id(self):
+        return self.get_item_data()['app']['app_id']
+
+    @property
+    def app_id__str(self):
+        return '%d' % self.app_id
+
+    @property
     def item_id(self):
         return self.get_item_data()['item_id']
 
