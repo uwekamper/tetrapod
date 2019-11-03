@@ -1,111 +1,24 @@
 import json
 import os
 from unittest import TestCase
-import datetime
 
 from tetrapod.helpers import (
-    fetch_field,
-    Item,
+    iterate_array,
+    iterate_resource,
 )
 
 
-class TestFetchField(TestCase):
+class TestIterateArray(TestCase):
     def setUp(self):
-        json_path = os.path.join(os.path.dirname(__file__), 'test_item.json')
-        with open(json_path, mode='r') as fh:
-            self.test_item = json.load(fh)
+        pass
 
-    def test_get_field_not_found(self):
-        self.assertEquals(
-            None,
-            fetch_field('does_not_exist', self.test_item)
-        )
-
-    def test_get_field_with_underscore(self):
-        self.assertEquals(
-            'Go',
-            fetch_field('do_it', self.test_item)
-        )
-
-    def test_get_text_field(self):
-        self.assertEquals(
-            "Bow of boat",
-            fetch_field('name', self.test_item)
-        )
-
-    def test_get_text_field_multiline(self):
-        self.assertEquals(
-            "<p>There's something about knowing the bow from the stern that "
-            "makes sense in regard to this project.</p>",
-            fetch_field('description', self.test_item)
-        )
-
-    def test_fetch_category_field(self):
-        self.assertEqual(
-            [(1, "Entered"), (2, "Accepted"), (3, "Rejected")],
-            fetch_field('status2__choices', self.test_item)
-        )
-        self.assertEqual(
-            "Accepted",
-            fetch_field('status2', self.test_item)
-        )
-        self.assertEqual(
-            "Accepted",
-            fetch_field('status2__active', self.test_item)['text']
-        )
-        self.assertEqual(
-            2,
-            fetch_field('status2__active', self.test_item)['id']
-        )
-        self.assertEqual(
-            "DCEBD8",
-            fetch_field('status2__active', self.test_item)['color']
-        )
-
-    def test_fetch_app_field(self):
-        self.assertEqual(
-            503454054,
-            fetch_field('projects', self.test_item)['item_id']
-        )
-        self.assertEqual(
-            503454054,
-            fetch_field('projects__all', self.test_item)[0]['item_id']
-        )
-
-    def test_fetch_calculation_field(self):
-        self.assertEqual(
-            "Hello,  John Doe",
-            fetch_field('calc', self.test_item)
-        )
-
-    def test_fetch_date_field(self):
-        self.assertEqual(
-            '2018-07-27 01:00:00',
-            fetch_field('date', self.test_item)
-        )
-        self.assertEqual(
-            datetime.datetime(2018, 7, 27, 1, 0),
-            fetch_field('date__datetime', self.test_item)
-        )
-
-    def test_fetch_embed_field(self):
-        self.assertEqual(
-            "http://www.newsletter-webversion.de/?c=0-v0yw-0-11xa&utm_source=newsletter&utm_medium=email&utm_campaign=02%2F2017+DT&newsletter=02%2F2017+DT",
-            fetch_field('embed', self.test_item)
-        )
+    def test_iterate_array(self):
+        pass
 
 
-
-class TestItem(TestCase):
-
+class TestIterateResource(TestCase):
     def setUp(self):
-        json_path = os.path.join(os.path.dirname(__file__), 'test_item.json')
-        with open(json_path, mode='r') as fh:
-            self.test_item = json.load(fh)
-        self.item = Item(item_data=self.test_item)
+        pass
 
-    def test__getitem__(self):
-        self.assertEquals(
-            "Bow of boat",
-            self.item['name']
-        )
+    def test_iterate_resource(self):
+        pass
