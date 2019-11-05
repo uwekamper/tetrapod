@@ -106,5 +106,5 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
         resp = api_resp.json()
         all_items.extend( resp['items'] )
 
-    print("Got all items!") 
+    log.debug("Got all items!")
     return all_items

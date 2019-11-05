@@ -141,8 +141,12 @@ class PodioOAuth2Session(OAuth2Session):
                 remaining = response.headers.get('X-Rate-Limit-Remaining')
                 return response
 
-            # Most likely, we have encountered a 504 Gateway timeout error.
+            if 400 <= response.status_code < 500:
+                # Errors like 404 or 403 are most likely our own fault and we return immediately
+                return response
+
             if 500 <= response.status_code < 600:
+                # Most likely, we have encountered a 504 Gateway timeout error.
                 retry_counter -= 1
                 log.warning('Response from URL "%s" with status code %d. Retrying in 3 seconds ...' % (url, response.status_code))
                 sleep(3.0)
