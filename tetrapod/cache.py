@@ -19,14 +19,22 @@ class CachedItem(Item):
     def get_podio_session(self):
         return self._item_storage.podio
 
+    def get_app_config(self):
+        app_id = self.get_item_data()['app']['app_id']
+        return self._item_storage.get_app_config(app_id)
+
     def save(self):
+        if len(self._tainted) == 0:
+            return
         podio = self.get_podio_session()
         podio_dict = self.as_podio_dict(fields=self._tainted)
         resp = podio.put(
             f'https://api.podio.com/item/{self.item_id}/value',
             json=podio_dict
         )
+        resp.raise_for_status()
         self._item_storage.update_item(item=self)
+        self._tainted = set()
 
 
 class CachedItemNotFound(Exception):
@@ -50,20 +58,7 @@ class CachedItemStorage(object):
         self.app_configs = {}
         self.conn = conn
         self.podio = podio
-
-
-    def get_item(self, app_id: int, item_id: int):
-        table_name = f'podio_app_{app_id}'
-
-        cursor = self.conn.cursor()
-        sql = """SELECT item_data FROM ? WHERE item_id = ?"""
-        vars = (table_name, item_id)
-        cursor.execute(sql, vars)
-        item_data = json.loads(cursor.fetchone()[0])
-        cursor.close()
-
-        item = CachedItem(item_storage=self, item_data=item_data)
-        return item
+        self.cache_configs = {}
 
     def _find_item_sql(self, sql, parameters):
         clean_params = []
@@ -79,12 +74,26 @@ class CachedItemStorage(object):
         cursor.close()
 
         if len(found) == 0:
-            raise CachedItemNotFound(f'Item not found, SQL query: {sql}, parameters: {repr(clean_params)}')
+            raise CachedItemNotFound(f'Item not found, SQL query: {sql}, '
+                                     f'parameters: {repr(clean_params)}')
         elif len(found) == 1:
             item = CachedItem(self, json.loads(found[0][0]))
             return item
         elif len(found) >= 2:
             raise Exception('Natural keys must be unique: %s', ','.join(found))
+
+    def get_item(self, app_id: int, item_id: int):
+        table_name = f'podio_app_{app_id}'
+
+        cursor = self.conn.cursor()
+        sql = """SELECT item_data FROM ? WHERE item_id = ?"""
+        vars = (table_name, item_id)
+        cursor.execute(sql, vars)
+        item_data = json.loads(cursor.fetchone()[0])
+        cursor.close()
+
+        item = CachedItem(item_storage=self, item_data=item_data)
+        return item
 
     # TODO: Give this method a name that better describes what it does
     def get_item_by_join_ids(self, podio_app_id: int, select_for: dict):
@@ -108,32 +117,23 @@ class CachedItemStorage(object):
         return self._find_item_sql(sql, (key_val, ))
 
     def update_item(self, item: CachedItem):
+        app_id = item.get_item_data()['app']['app_id']
+        table_name = f'podio_app_{app_id}'
+        extra_fields = self.cache_configs[table_name]['extra_fields']
+        natural_key_list = self.cache_configs[table_name]['natural_key']
 
-        for key, value in item_values:
-            item[key] = value
+        self.insert_item_data_into_db(app_id, item.get_item_data(),
+                                      extra_fields, natural_key_list)
 
-        with self.conn.cursor() as cursor:
-            sql = """UPDATE ? SET item_data = ? WHERE item_id = ?"""
-            vars = (table_name, json.dumps(item.get_item_data()), item.item_id)
-            cursor.execute(sql, vars)
-        self.conn.commit()
-
-    def create_item(self, app_id: int, item_values: dict,
-                    extra_fields: list, natural_key: Union[list, str]):
-        natural_key_list = None
-        if natural_key:
-            if not isinstance(natural_key, list):
-                natural_key_list = [natural_key]
-            else:
-                natural_key_list = natural_key
-
+    def create_item(self, app_id: int, item_values: dict):
+        table_name = f'podio_app_{app_id}'
+        extra_fields = self.cache_configs[table_name]['extra_fields']
+        natural_key_list = self.cache_configs[table_name]['natural_key']
         resp = self.podio.post(f'https://api.podio.com/item/app/{app_id:d}/',
                                json={'fields': item_values})
         resp.raise_for_status()
-
-        table_name = f'podio_app_{app_id}'
         item_data = resp.json()
-        self.insert_item_data_into_db(table_name, item_data, extra_fields, natural_key_list)
+        self.insert_item_data_into_db(app_id, item_data, extra_fields, natural_key_list)
         return CachedItem(self, item_data)
 
     def delete_item(self, app_id: int, item_id: int):
@@ -149,18 +149,52 @@ class CachedItemStorage(object):
             self.app_configs[int(podio_app_id)] = config
             return config
 
-    def cache_app(self, podio_app_id: int, join_fields, natural_key):
+    def init_cache(self):
+        sql = """SELECT table_name, extra_fields, natural_key FROM cached_apps"""
+        cursor = self.conn.cursor()
+        cursor.execute(sql)
+        all = cursor.fetchall()
+        for table_name, extra_fields, natural_key in all:
+            self.cache_configs[table_name] = {
+                'extra_fields': extra_fields.split(',') if extra_fields else [],
+                'natural_key': natural_key.split(',') if natural_key else None,
+            }
+        cursor.close()
+        log.debug('Cache initialized.')
+        log.debug(json.dumps(self.cache_configs, indent=2))
+
+    def cache_app(self, podio_app_id: int, extra_fields: list, natural_key: Union[Iterable, str]):
         """
         Create a local copy of all the items in one app.
         """
+        table_name = 'podio_app_%d' % podio_app_id
         natural_key_list = None
         if natural_key:
-            if  not isinstance(natural_key, list):
+            if not isinstance(natural_key, list):
                 natural_key_list = [natural_key]
             else:
                 natural_key_list = natural_key
 
-        table_name = 'podio_app_%d' % podio_app_id
+        # Store the list of extra field names and the list of field names needed to
+        # construct the __natural_key. This can later be used to run queries and update
+        # entries.
+        setup_sql = """CREATE TABLE IF NOT EXISTS cached_apps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name TEXT UNIQUE NOT NULL,
+            extra_fields TEXT NULL,
+            natural_key TEXT NULL)"""
+        self.conn.execute(setup_sql)
+
+        new_cache_sql = """
+        INSERT INTO cached_apps(table_name, extra_fields, natural_key)
+            VALUES(?, ?, ?)
+        """
+        self.conn.execute(
+            new_cache_sql,
+            (table_name, f"{','.join(extra_fields)}", f"{','.join(natural_key_list)}")
+        )
+
+        # Build the actual table for the items.
         cols = [
             'item_id INT PRIMARY KEY NOT NULL',
             'item_data TEXT NULL',
@@ -168,7 +202,7 @@ class CachedItemStorage(object):
         if natural_key_list:
             cols.append('__natural_key TEXT NULL')
 
-        for field_name in join_fields:
+        for field_name in extra_fields:
             cols.append('"%s" TEXT NULL' % field_name)
         cols_sql = ", ".join(cols)
         stuff = f'CREATE TABLE IF NOT EXISTS {table_name} ({cols_sql});'
@@ -178,7 +212,7 @@ class CachedItemStorage(object):
         url = "https://api.podio.com/item/app/%d/filter/" % podio_app_id
         all_items = iterate_resource(self.podio, url, limit=300)
         for item_data in all_items:
-            self.insert_item_data_into_db(table_name, item_data, join_fields, natural_key_list)
+            self.insert_item_data_into_db(podio_app_id, item_data, extra_fields, natural_key_list)
 
         self.conn.commit()
         if natural_key_list:
@@ -192,15 +226,23 @@ class CachedItemStorage(object):
                 log.debug(err)
                 raise err
 
-    def insert_item_data_into_db(self, table_name, item_data,
+    def insert_item_data_into_db(self, app_id, item_data,
                                  extra_fields=None, natural_key_list=None):
+        table_name = f'podio_app_{app_id}'
+
+        # Make sure that the Podio app ID is always included.
+        try:
+            item_data['app']['app_id']
+        except KeyError:
+            item_data['app'] = {'app_id': app_id}
+
         item = Item(item_data)
 
-        # determine the value of the natural key
-
         # item-ID and json-dump of the whole item go first.
+        columns = ['item_id', 'item_data']
         values = [item_data['item_id'], json.dumps(item_data)]
 
+        # determine the value of the natural key
         if natural_key_list:
             nat_key_val = []
             for key in natural_key_list:
@@ -213,6 +255,7 @@ class CachedItemStorage(object):
                 else:
                     nat_key_val.append('%s' % item[key])
             values.append('-'.join(nat_key_val))
+            columns.append('__natural_key')
 
         if extra_fields:
             for field_name in extra_fields:
@@ -222,13 +265,17 @@ class CachedItemStorage(object):
                 if isinstance(item[field_name], dict):
                     related = [item[key]['item_id']]
                     values.append(repr(related))
+                    columns.append(f'"{field_name}"')
                 else:
                     values.append('%s' % item[field_name])
+                    columns.append(f'"{field_name}"')
 
         # create enough questionsmarks for the SQL
+        column_names = ', '.join(columns)
         placeholders = ', '.join('?' * len(values))
-        sql = f'INSERT OR REPLACE INTO {table_name} VALUES ({placeholders})'
+        sql = f'INSERT OR REPLACE INTO {table_name} ({column_names}) VALUES ({placeholders})'
         self.conn.execute(
             sql,
             values
         )
+        self.conn.commit()

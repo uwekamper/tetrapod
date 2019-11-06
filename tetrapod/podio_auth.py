@@ -1,11 +1,10 @@
 import cgi
-import json
-
 import click
-import os
 import datetime
-import requests
+import json
 import logging
+import os
+import requests
 import requests.exceptions
 
 from time import sleep
@@ -24,6 +23,14 @@ KEEP_RUNNING = True
 credentials = None
 
 log = logging.getLogger(__name__)
+
+
+TETRAPOD_MINIMUM_RATE_LIMIT = os.environ.get('TETRAPOD_MINIMUM_RATE_LIMIT')
+if TETRAPOD_MINIMUM_RATE_LIMIT:
+    TETRAPOD_MINIMUM_RATE_LIMIT = int(TETRAPOD_MINIMUM_RATE_LIMIT) / 100.0
+else:
+    # Ten percent is the default
+    TETRAPOD_MINIMUM_RATE_LIMIT = 0.1
 
 
 def keep_running():
@@ -139,9 +146,24 @@ class PodioOAuth2Session(OAuth2Session):
             if response.status_code < 400:
                 limit = response.headers.get('X-Rate-Limit-Limit')
                 remaining = response.headers.get('X-Rate-Limit-Remaining')
+                # Less than x percent => wait one hour
+                if remaining and limit and int(remaining) / int(limit) < TETRAPOD_MINIMUM_RATE_LIMIT:
+                    log.warning('X-Rate-Limit-Remaining is less than %d percent.' % TETRAPOD_MINIMUM_RATE_LIMIT)
+                    log.warning('Waiting one hour for Rate-Limit to return.')
+                    for i in range(12):
+                        sleep(300.0)
+                        mins = int((3600 - (i*300)) / 60.0)
+                        log.debug('Waiting one hour for Rate-Limit, %d minutes remaining.' % mins)
                 return response
 
             if 400 <= response.status_code < 500:
+                log.error("HTTP Error happened, status: %s" % response.status_code)
+                log.error('* method: %s' % method)
+                log.error('* url: %s' % url)
+                if kwargs.get('json'):
+                    log.error('* json: %s' % repr(kwargs['json']))
+                log.error('* server response: %s' % repr(response.content))
+                sleep(3.0)
                 # Errors like 404 or 403 are most likely our own fault and we return immediately
                 return response
 
@@ -151,13 +173,6 @@ class PodioOAuth2Session(OAuth2Session):
                 log.warning('Response from URL "%s" with status code %d. Retrying in 3 seconds ...' % (url, response.status_code))
                 sleep(3.0)
                 continue
-
-
-
-
-
-
-
 
 
 def authorize(client_id, client_secret=None):

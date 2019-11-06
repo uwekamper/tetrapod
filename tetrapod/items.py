@@ -32,6 +32,9 @@ class PodioFieldMediator(object):
     def fetch(self, field, field_param):
         raise NotImplementedError()
 
+    def as_podio_dict(self, field):
+        raise NotImplementedError()
+
 
 class EmbedMediator(PodioFieldMediator):
     """
@@ -130,12 +133,23 @@ class AppMediator(PodioFieldMediator):
       value: The id of the app item
     """
     def fetch(self, field, field_param=None):
-        if field_param is None:
-            for value in field.get('values', []):
-                return value['value']
-        elif field_param == 'all':
-            return [v['value'] for v in field.get('values', [])]
-        return None
+        return [v['value']['item_id'] for v in field.get('values', [])]
+
+    def update(self, field, value, field_param=None):
+        item_id_list = value
+        if isinstance(value, int) or isinstance(value, str):
+            item_id_list = [value]
+        values = []
+        for item_id in item_id_list:
+            values.append({
+                "value": {
+                    "item_id": item_id
+                }
+            })
+        return values
+
+    def as_podio_dict(self, field):
+        return self.fetch(field)
 
 
 class DateMediator(PodioFieldMediator):
@@ -186,15 +200,21 @@ class TextMediator(PodioFieldMediator):
         format: The format of the text, either plain, markdown or html
     """
     def update(self, field, value, field_param=None):
-        field['values'] = [{
+        values = [{
             'value': value
         }]
+        return values
 
     def fetch(self, field, field_param=None):
         if field_param is None:
-            for value in field.get('values', []):
-                return value['value']
+            values = field.get('values')
+            if values:
+                for value in values:
+                    return value['value']
         return None
+
+    def as_podio_dict(self, field):
+        return self.fetch(field)
 
 
 class CategoryMediator(PodioFieldMediator):
@@ -316,7 +336,8 @@ def split_descriptor_parts(field_descriptor):
         field_param = None
     return external_id, field_param
 
-def get_field_from_podio_json_list(item_json, external_id):
+
+def get_field_from_podio_json_list(item_json, external_id, app_config=None):
     """
     :param external_id:
     :return:
@@ -330,6 +351,13 @@ def get_field_from_podio_json_list(item_json, external_id):
         if field['external_id'] == external_id:
             return field
 
+    if app_config:
+        for field in app_config['fields']:
+            if field['external_id'] == external_id:
+                return field
+
+    raise Exception("Some field was not included in the Podio item that should be there")
+
 
 def find_mediator_class(field):
     field_type = field['type']
@@ -340,7 +368,7 @@ def find_mediator_class(field):
     return mediator_class
 
 
-def fetch_field(field_descriptor, item_json):
+def fetch_field(field_descriptor, item_json, app_config=None):
     """
     Fetch the first value of a field - or None if the field is empty.
     :param field_descriptor: The Podio external_id name as shown in the developer view.
@@ -350,7 +378,7 @@ def fetch_field(field_descriptor, item_json):
     external_id, field_param = split_descriptor_parts(field_descriptor)
 
     # Get the only the JSON part of the desired field
-    field = get_field_from_podio_json_list(item_json, external_id)
+    field = get_field_from_podio_json_list(item_json, external_id, app_config)
     if not field:
         return None
 
@@ -362,26 +390,62 @@ def fetch_field(field_descriptor, item_json):
     return mediator.fetch(field, field_param)
 
 
-def update_field(field_descriptor, new_value, item_json):
+def update_field(field_descriptor, new_value, item_json, app_config=None):
     external_id, field_param = split_descriptor_parts(field_descriptor)
 
     # Get the only the JSON part of the desired field
-    field = get_field_from_podio_json_list(item_json, external_id)
+    field = get_field_from_podio_json_list(item_json, external_id, app_config)
 
     # Find and instanciate the correct PodioFieldMediator for this kind of field.
     mediator_class = find_mediator_class(field)
     mediator = mediator_class()
 
     # Use the mediator to get the actual data
-    return mediator.update(field, new_value, field_param)
+    actual = mediator.update(field, new_value, field_param)
+
+    for field in item_json['fields']:
+        if field['external_id'] == field_descriptor:
+            field['values'] = actual
+            return actual
+
+    for field in app_config['fields']:
+        if field['external_id'] == field_descriptor:
+            item_json['fields'].append({
+                'type': field['type'],
+                'external_id': field_descriptor,
+                'values': actual
+            })
+    return actual
+
+
+def fetch_podio_dict(field_descriptor, item_json, app_config=None):
+    """
+    Fetch the first value of a field - or None if the field is empty.
+    :param field_descriptor: The Podio external_id name as shown in the developer view.
+    :param item_json: The JSON representation of the Podio item.
+    :return: First value or None
+    """
+    external_id, field_param = split_descriptor_parts(field_descriptor)
+
+    # Get the only the JSON part of the desired field
+    field = get_field_from_podio_json_list(item_json, external_id, app_config)
+    if not field:
+        return None
+
+    # Find and instanciate the correct PodioFieldMediator for this kind of field.
+    mediator_class = find_mediator_class(field)
+    mediator = mediator_class()
+
+    # Use the mediator to get the actual data
+    return mediator.as_podio_dict(field)
 
 
 class BaseItem(Mapping):
     def __getitem__(self, key):
-        return fetch_field(key, self.get_item_data())
+        return fetch_field(key, self.get_item_data(), self.get_app_config())
 
     def __setitem__(self, key, value):
-        update_field(key, value, self.get_item_data())
+        update_field(key, value, self.get_item_data(), self.get_app_config())
         self._tainted.add(key)
 
     def __iter__(self):
@@ -392,6 +456,9 @@ class BaseItem(Mapping):
 
     def get_item_data(self) -> list:
         raise NotImplementedError()
+
+    def get_app_config(self):
+        return None
 
     @property
     def app_id(self):
@@ -430,14 +497,19 @@ class BaseItem(Mapping):
         is to include all fields.
         """
         podio_dict = {}
-        for field in self.get_item_data().get('fields', []):
+        for field in self.get_app_config().get('fields', []):
+            # Ignore calculation fields.
+            if field.get('type') == 'calculation':
+                continue
+
             external_id = field['external_id']
 
             # do not add fields to the dict that are not in the fields list.
-            if fields and external_id not in fields:
+            if fields != None and external_id not in fields:
                 continue
 
-            podio_dict[external_id] = field['values']
+            podio_dict[external_id] = \
+                fetch_podio_dict(external_id, self.get_item_data(), self.get_app_config())
 
         return podio_dict
 
