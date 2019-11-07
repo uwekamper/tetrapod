@@ -64,13 +64,17 @@ class TestFetchField(TestCase):
 
     def test_fetch_app_field(self):
         self.assertEqual(
-            503454054,
-            fetch_field('projects', self.test_item)['item_id']
+            [503454054],
+            fetch_field('projects', self.test_item)
         )
-        self.assertEqual(
-            503454054,
-            fetch_field('projects__all', self.test_item)[0]['item_id']
-        )
+        # self.assertEqual(
+        #     503454054,
+        #    fetch_field('projects__first', self.test_item)
+        #)
+        #self.assertEqual(
+        #    503454054,
+        #    fetch_field('projects__last', self.test_item)
+        #)
 
     def test_fetch_calculation_field(self):
         self.assertEqual(
