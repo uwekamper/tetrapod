@@ -133,7 +133,13 @@ class AppMediator(PodioFieldMediator):
       value: The id of the app item
     """
     def fetch(self, field, field_param=None):
-        return [v['value']['item_id'] for v in field.get('values', [])]
+        items = [v['value']['item_id'] for v in field.get('values', [])]
+        if not field_param:
+            return items
+        if field_param == 'first':
+            return items[0]
+        elif field_param == 'last':
+            return items[:-1]
 
     def update(self, field, value, field_param=None):
         item_id_list = value
@@ -497,7 +503,12 @@ class BaseItem(Mapping):
         is to include all fields.
         """
         podio_dict = {}
-        for field in self.get_app_config().get('fields', []):
+        app_config = self.get_app_config()
+        if not app_config:
+            app_fields = self.get_item_data().get('fields', [])
+        else:
+            app_fields = app_config.get('fields', [])
+        for field in app_fields:
             # Ignore calculation fields.
             if field.get('type') == 'calculation':
                 continue
@@ -508,8 +519,12 @@ class BaseItem(Mapping):
             if fields != None and external_id not in fields:
                 continue
 
-            podio_dict[external_id] = \
+            field_podio_dict = \
                 fetch_podio_dict(external_id, self.get_item_data(), self.get_app_config())
+            podio_dict = dict(
+                podio_dict,
+                **  {external_id: field_podio_dict}
+            )
 
         return podio_dict
 

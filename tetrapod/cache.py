@@ -105,6 +105,26 @@ class CachedItemStorage(object):
         sql = f"""SELECT item_data FROM {table_name} WHERE {where_clauses_str}"""
         return self._find_item_sql(sql, list(select_for.values()))
 
+    def get_referenced_item(self, podio_app_id: int, item_ids: Iterable, select_for: dict):
+        """
+        Find one item but only return it, if it is
+        """
+        table_name = f'podio_app_{podio_app_id:d}'
+        where_clauses = []
+        for key, val in select_for.items():
+            where_clauses.append(f'"{key}" = ?')
+
+        # Now restrict even further by the list of allowed item_ids
+        if len(item_ids) == 0:
+            raise CachedItemNotFound()
+        item_ids_str = ", ".join([f'{el:d}' for el in item_ids])
+        where_clauses.append(f'item_id IN ({(item_ids_str)})')
+
+        # Put it together
+        where_clauses_str = ' AND '.join(where_clauses)
+        sql = f"""SELECT item_data FROM {table_name} WHERE {where_clauses_str}"""
+        return self._find_item_sql(sql, list(select_for.values()))
+
     def get_item_by_natural_key(self, podio_app_id: int, key: Union[Iterable, str]) -> CachedItem:
         if isinstance(key, Iterable):
             key_val = '-'.join(key)
@@ -185,14 +205,24 @@ class CachedItemStorage(object):
             natural_key TEXT NULL)"""
         self.conn.execute(setup_sql)
 
-        new_cache_sql = """
-        INSERT INTO cached_apps(table_name, extra_fields, natural_key)
-            VALUES(?, ?, ?)
-        """
-        self.conn.execute(
-            new_cache_sql,
-            (table_name, f"{','.join(extra_fields)}", f"{','.join(natural_key_list)}")
-        )
+        if natural_key:
+            new_cache_sql = """
+            INSERT INTO cached_apps(table_name, extra_fields, natural_key)
+                VALUES(?, ?, ?)
+            """
+            self.conn.execute(
+                new_cache_sql,
+                (table_name, f"{','.join(extra_fields)}", f"{','.join(natural_key_list)}")
+            )
+        else:
+            new_cache_sql = """
+                    INSERT INTO cached_apps(table_name, extra_fields)
+                        VALUES(?, ?)
+                    """
+            self.conn.execute(
+                new_cache_sql,
+                (table_name, f"{','.join(extra_fields)}")
+            )
 
         # Build the actual table for the items.
         cols = [
