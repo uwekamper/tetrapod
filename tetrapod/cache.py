@@ -67,7 +67,6 @@ class CachedItemStorage(object):
                 clean_params.append(repr(param))
             else:
                 clean_params.append(param)
-        log.debug(f"parameters: {repr(clean_params)}")
         cursor = self.conn.cursor()
         cursor.execute(sql, clean_params)
         found = cursor.fetchall()
@@ -180,7 +179,7 @@ class CachedItemStorage(object):
                 'natural_key': natural_key.split(',') if natural_key else None,
             }
         cursor.close()
-        log.debug('Cache initialized.')
+        log.debug('Cache initialized with cache configuration:')
         log.debug(json.dumps(self.cache_configs, indent=2))
 
     def cache_app(self, podio_app_id: int, extra_fields: list, natural_key: Union[Iterable, str]):
@@ -235,9 +234,9 @@ class CachedItemStorage(object):
         for field_name in extra_fields:
             cols.append('"%s" TEXT NULL' % field_name)
         cols_sql = ", ".join(cols)
-        stuff = f'CREATE TABLE IF NOT EXISTS {table_name} ({cols_sql});'
-        log.debug(stuff)
-        self.conn.execute(stuff)
+        create_sql = f'CREATE TABLE IF NOT EXISTS {table_name} ({cols_sql});'
+        log.debug(create_sql)
+        self.conn.execute(create_sql)
         self.conn.commit()
         url = "https://api.podio.com/item/app/%d/filter/" % podio_app_id
         all_items = iterate_resource(self.podio, url, limit=300)

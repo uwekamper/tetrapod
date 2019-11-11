@@ -84,7 +84,7 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
     all_items.extend(resp['items'])
 
     total = resp['total']
-    log.debug('offset: {}, total: {}, '.format(offset, total))
+    log.debug('Getting items from offset: %d, total: %d' % (offset, total))
     steps_left = []
     if total > limit:
         num_steps = int(math.ceil(total / limit))
@@ -93,7 +93,7 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
         steps_left = steps[1:]
 
     for curr_offset in steps_left:
-        print('offset: {}, total: {}, waiting ...'.format(curr_offset, total))
+        log.debug('Getting items from offset: %d, total: %d' % (curr_offset, total))
         params['limit'] = limit
         params['offset'] = curr_offset
         if http_method == 'POST':
