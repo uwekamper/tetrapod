@@ -31,7 +31,7 @@ This will display among other things the item_id and the app_id:
 ![Click on dwActions](docs/developer-info02.png)
 
 Using the item_id you can now write a simple python programm that will read the details
-of one single item:
+of one single item. Create file named `get_item_data.py` that contains the following Python code:
 
 ```python
 from tetrapod.session import create_podio_session
