@@ -70,6 +70,52 @@ Item title: Bow of boat
 $ _ 
 ```
 
+## Working with higher number of Podio items
+
+Podio has very strict API limits. Because of this, tetrapod includes an option to
+create a 'robust' session. If you create Podio session with the `robust` parameter,
+tetrapod will wait when the API limit is reached and it will also retry the request
+when Podio returns a '504 Gateway timeout' error.
+
+```
+from tetrapod.session import create_podio_session
+
+podio = create_podio_session(robust=True)
+```
+
+Another hurdle is pagination. To download the data of a whole Podio app, we need to
+get the Podio items in smaller chunks:
+
+```
+from tetrapod.session import create_podio_session
+from tetrapod.helpers import iterate_resource
+
+podio = create_podio_session(robust=True)
+url = f'https://api.podio.com/item/app/{app_id}/filter/'
+
+for item in iterate_resource(client, url, 'POST', limit=250):
+    print(item['item_id'])
+```
+
+(The `limit` parameter can be anything from 1 to 500. On larger Podio apps it is wise to stay below
+300 and reduce the limit if you see that the Podio API returns a lot of HTTP 504 Errors.
+
+See https://developers.podio.com/doc/items/filter-items-4496747 for more info on the
+filter API endpoint.
+
+## Turning a whole Podio app into a Pandas dataframe
+
+For this example to work [Pandas](https://pandas.pydata.org/) needs to be installed already. 
+Often you want to get __all__ the data from one Podio app.
+
+```python
+import tetrapod.dataframe
+from tetrapod.session import create_podio_session
+
+ITEM_ID=123456789 # <- Replace with your own item_id.
+df_raw = tetrapod.dataframe.load_from_app(podio, 23299861, labels=field_labels + COUNTRIES)
+
+
 
 
 
