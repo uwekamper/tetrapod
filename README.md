@@ -77,7 +77,7 @@ create a 'robust' session. If you create Podio session with the `robust` paramet
 tetrapod will wait when the API limit is reached and it will also retry the request
 when Podio returns a '504 Gateway timeout' error.
 
-```
+```python
 from tetrapod.session import create_podio_session
 
 podio = create_podio_session(robust=True)
@@ -86,9 +86,11 @@ podio = create_podio_session(robust=True)
 Another hurdle is pagination. To download the data of a whole Podio app, we need to
 get the Podio items in smaller chunks:
 
-```
+```python
 from tetrapod.session import create_podio_session
 from tetrapod.helpers import iterate_resource
+
+app_id = 987654321 # <- Enter your own app_id here.
 
 podio = create_podio_session(robust=True)
 url = f'https://api.podio.com/item/app/{app_id}/filter/'
@@ -112,12 +114,11 @@ Often you want to get __all__ the data from one Podio app.
 import tetrapod.dataframe
 from tetrapod.session import create_podio_session
 
+app_id = 987654321 # <- Enter your own app_id here.
+
 ITEM_ID=123456789 # <- Replace with your own item_id.
-df_raw = tetrapod.dataframe.load_from_app(podio, 23299861, labels=field_labels + COUNTRIES)
-
-
-
-
+df = tetrapod.dataframe.load_from_app(podio, app_id, labels=['Title'])
+```
 
 
 ## Useful links
