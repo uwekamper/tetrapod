@@ -1,8 +1,20 @@
 # Tetrapod
 
+## How to install
+
+```
+pip install -e git+https://github.com/uwekamper/tetrapod.git#egg=tetrapod
+```
+
 ## the 'tpod' command
 
-TODO: Document the tpod command
+Get your client ID und client token from https://podio.com/settings/api
+
+Then run the following command:
+
+```
+tpod init --client-id=<Podio-client-id> --client-token=<Podio-client-token>
+```
 
 ## Suggested literature
 + https://github.com/finklabs/whaaaaat
