@@ -8,12 +8,12 @@ pip install -e git+https://github.com/uwekamper/tetrapod.git#egg=tetrapod
 
 ## the 'tpod' command
 
-Get your client ID und client token from https://podio.com/settings/api
+Get your client ID und client secret from https://podio.com/settings/api
 
 Then run the following command:
 
 ```
-tpod init --client-id=<Podio-client-id> --client-token=<Podio-client-token>
+tpod init --client-id=<Podio-client-id> --client-secret=<Podio-client-secret>
 ```
 
 This will create a hidden file called `.tetrapod_credentials.json` in the
