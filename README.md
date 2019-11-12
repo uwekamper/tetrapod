@@ -54,7 +54,10 @@ def get_podio_item(item_id):
 
 
 if __name__ == '__main__':
-    get_podio_item(ITEM_ID)
+    item_data = get_podio_item(ITEM_ID)
+    # print something from the item_data, then exit
+    print(f"Item-ID: {item_data['item_id']}")
+    print(f"Item title: {item_data['title']}")
 
 ```
 
