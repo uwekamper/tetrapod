@@ -33,7 +33,7 @@ This will display among other things the item_id and the app_id:
 Using the item_id you can now write a simple python programm that will read the details
 of one single item:
 
-```
+```python
 from tetrapod.session import create_podio_session
 
 ITEM_ID=123456789 # <- Replace with your own item_id.
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
 Now run the program. The output should look like this:
 
-```
+```bash
 $ python ./get_item_data.py
 Item-ID: 123456789
 Item title: Bow of boat
