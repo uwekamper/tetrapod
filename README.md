@@ -114,10 +114,14 @@ Often you want to get __all__ the data from one Podio app.
 import tetrapod.dataframe
 from tetrapod.session import create_podio_session
 
-app_id = 987654321 # <- Enter your own app_id here.
+podio = create_podio_session(robust=True)
+app_id = 987654321 # <- Replace with your own app_id here.
 
-ITEM_ID=123456789 # <- Replace with your own item_id.
-df = tetrapod.dataframe.load_from_app(podio, app_id, labels=['Title'])
+# You need to list the fields that should be included in the dataframe
+df = tetrapod.dataframe.load_from_app(podio, app_id, labels=['Title', 'Description'])
+
+# But you can also use the external_ids of the fields
+df = tetrapod.dataframe.load_from_app(podio, app_id, external_ids=['title‘, 'description'])
 ```
 
 
