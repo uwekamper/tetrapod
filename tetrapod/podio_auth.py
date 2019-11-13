@@ -269,7 +269,10 @@ def save_token(token):
     with open('.tetrapod_credentials.json', mode='w') as fh:
         expires_at = datetime.datetime.utcnow() \
                      + datetime.timedelta(seconds=int(token.get('expires_in', 0)))
-        token['expires_at'] = int(expires_at.strftime("%s"))
+        # strftime depends on the platform. Windows does not support the '%s' format for
+        # unix timestamps. Therefore we need to create our own unix timestamp here.
+        epoch = datetime.datetime(1970, 1, 1)
+        token['expires_at'] = int((expires_at - epoch).total_seconds())
         json.dump(token, fh, indent=2, sort_keys=True)
 
 
