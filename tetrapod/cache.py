@@ -94,7 +94,6 @@ class CachedItemStorage(object):
         item = CachedItem(item_storage=self, item_data=item_data)
         return item
 
-    # TODO: Give this method a name that better describes what it does
     def get_item_by_join_ids(self, podio_app_id: int, select_for: dict):
         table_name = f'podio_app_{podio_app_id:d}'
         where_clauses = []

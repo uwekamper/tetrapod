@@ -1,6 +1,7 @@
 import os
 import math
 import time
+import dateutil.parser
 import datetime
 import logging
 from collections.abc import Mapping
@@ -165,7 +166,27 @@ class DateMediator(PodioFieldMediator):
         start_time: The start time
         end_date: The end date
         end_time: The end time
+
+        {
+          "start": "2018-10-15 00:00:00",
+          "start_date_utc": "2018-10-15",
+          "start_time_utc": null,
+          "start_time": null,
+          "start_utc": "2018-10-15",
+          "start_date": "2018-10-15"
+        }
     """
+    def update(self, field, value, field_param=None):
+        if isinstance(value, datetime.datetime):
+            start = value.strftime('%Y-%m-%d %H:%M:%S')
+        if isinstance(value, str):
+            start = dateutil.parser.parse(value).strftime('%Y-%m-%d %H:%M:%S')
+
+        return [{
+            'start': start
+        }]
+
+
     def fetch(self, field, field_param=None):
         if field_param is None:
             for value in field.get('values', []):
@@ -177,6 +198,10 @@ class DateMediator(PodioFieldMediator):
 
         return None
 
+    def as_podio_dict(self, field):
+        for value in field.get('values', []):
+            return {'start': value['start']}
+
 # image:
 #   value: The file id of the image file
 
@@ -185,11 +210,25 @@ class NumberMediator(PodioFieldMediator):
     """
     number:
         value: The decimal value of the field as a string.
+
+        "values": [
+        {
+          "value": "1.0000"
+        }
+        ],
     """
-    def fetch(field, field_param=None):
+    def update(self, field, value, field_param=None):
+        dvalue = Decimal(value)
+        values = [{
+            'value': f'{dvalue:.4f}'
+        }]
+        return values
+
+    def fetch(self, field, field_param=None):
         if field_param is None:
             for value in field.get('values', []):
-                return Decimal(value['value'])
+                dvalue = Decimal(value['value'])
+                return f'{dvalue:.4f}'
         if field_param == 'int':
             for value in field.get('values', []):
                 return int(Decimal(value['value']).to_integral())
@@ -197,6 +236,9 @@ class NumberMediator(PodioFieldMediator):
             for value in field.get('values', []):
                 return float(Decimal(value['value']))
         return None
+
+    def as_podio_dict(self, field):
+        return self.fetch(field)
 
 
 class TextMediator(PodioFieldMediator):
@@ -207,7 +249,7 @@ class TextMediator(PodioFieldMediator):
     """
     def update(self, field, value, field_param=None):
         values = [{
-            'value': value
+            'value': value.strip()
         }]
         return values
 
