@@ -436,7 +436,7 @@ def get_field_from_podio_json_list(item_json, external_id, app_config=None):
             if field['external_id'] == external_id:
                 return field
 
-    raise Exception("Some field was not included in the Podio item that should be there")
+    raise KeyError('%s' % external_id)
 
 
 def find_mediator_class(field):
