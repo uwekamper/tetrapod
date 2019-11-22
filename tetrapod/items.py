@@ -506,7 +506,7 @@ class BaseItem(Mapping):
         raise NotImplementedError()
 
     def get_app_config(self):
-        return None
+        return self._app_config
 
     @property
     def app_id(self):
@@ -573,9 +573,10 @@ class BaseItem(Mapping):
 
 class Item(BaseItem):
 
-    def __init__(self, item_data):
+    def __init__(self, item_data, app_config=None):
         self._tainted = set()
         self.item_data = item_data
+        self._app_config = app_config
 
     def get_item_data(self):
         return self.item_data
