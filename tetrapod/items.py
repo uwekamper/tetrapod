@@ -6,7 +6,7 @@ import datetime
 import logging
 from collections.abc import Mapping
 from decimal import Decimal
-
+from typing import Union
 log = logging.getLogger(__name__)
 
 
@@ -269,7 +269,35 @@ class CategoryMediator(PodioFieldMediator):
     """
     category:
         value: The id of the option
+    
+    "values": [
+            {
+              "value": {
+                "status": "active",
+                "text": "Go",
+                "id": 1,
+                "color": "DCEBD8"
+              }
+            }
+          ]
     """
+    def update(self, field, value: Union[str, int, list], field_param=None):
+        opts = field['config']['settings']['options']
+        selected_opts = []
+        
+        # single values
+        if isinstance(value, str) or isinstance(value, int):
+            selected_values = [value]
+            
+        for val in selected_values:
+            for opt in opts:
+                if isinstance(val, str) and opt['text'] == val:
+                    selected_opts.append(opt)
+                if isinstance(val, int) and opt['id'] == value:
+                    selected_opts.append(opt)
+                    
+        return selected_opts
+        
     def fetch(self, field, field_param=None):
         if field_param == 'choices':
             options = field['config']['settings']['options']
@@ -305,6 +333,10 @@ class CategoryMediator(PodioFieldMediator):
                 return val['value']['text']
             else:
                 return None
+                
+    def as_podio_dict(self, field):
+        return [v['id'] for v in field.get('values', [])]
+
 
 class EmailMediator(PodioFieldMediator):
     """
@@ -565,7 +597,7 @@ class BaseItem(Mapping):
                 fetch_podio_dict(external_id, self.get_item_data(), self.get_app_config())
             podio_dict = dict(
                 podio_dict,
-                **  {external_id: field_podio_dict}
+                **{external_id: field_podio_dict}
             )
 
         return podio_dict
@@ -573,10 +605,23 @@ class BaseItem(Mapping):
 
 class Item(BaseItem):
 
-    def __init__(self, item_data, app_config=None):
+    def __init__(self, item_data: dict, app_config=None):
         self._tainted = set()
         self.item_data = item_data
         self._app_config = app_config
 
-    def get_item_data(self):
+    def get_item_data(self) -> dict:
         return self.item_data
+        
+    def save(self, podio_session=None) -> None:
+        if not podio_session:
+            raise Exception("You need to supply a podio session")
+        tainted_fields = list(self._tainted)
+        podio_dict = self.as_podio_dict(fields=tainted_fields)
+        resp = podio_session.put(
+            f'https://api.podio.com/item/{self.item_id}/value',
+            json=podio_dict
+        )
+        resp.raise_for_status()
+        
+        
