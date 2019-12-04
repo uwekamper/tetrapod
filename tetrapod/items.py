@@ -202,8 +202,45 @@ class DateMediator(PodioFieldMediator):
         for value in field.get('values', []):
             return {'start': value['start']}
 
-# image:
-#   value: The file id of the image file
+
+class ImageMediator(PodioFieldMediator):
+    """
+    image:
+      value: The file id of the image file
+    
+    Example:
+        "type": "image",
+        "field_id": 12345678,
+        "label": "Images",
+        "values": [
+          {
+            "value": {
+              "mimetype": "image/jpeg",
+              "perma_link": null,
+              "hosted_by": "podio",
+              "description": null,
+              "hosted_by_humanized_name": "Podio",
+              "size": 2151819,
+              "thumbnail_link": "https://files.podio.com/1012345674",
+              "link": "https://files.podio.com/1012345674",
+              "file_id": 1012345674,
+              "external_file_id": null,
+              "link_target": "_blank",
+              "name": "IMG_1234.JPG"
+            }
+          },
+        ],
+        external_id: "images"
+    """
+    def update(self, field, value, field_param=None):
+        for id in value:
+            pass
+    
+    def fetch(self, field, field_param=None):
+        return [ val['value']['file_id'] for val in field.get('values', []) ]
+        
+    def as_podio_dict(self, field):
+        pass
 
 
 class NumberMediator(PodioFieldMediator):
@@ -398,6 +435,7 @@ MEDIATORS = {
     'embed': EmbedMediator,
     'number': NumberMediator,
     'text': TextMediator,
+    'image': ImageMediator,
     # ... add future mediators here
 }
 
