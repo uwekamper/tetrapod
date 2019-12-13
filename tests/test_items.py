@@ -119,9 +119,17 @@ class TestItem(TestCase):
         # after setting the value, the number of tainted fields should go up.
         self.assertEqual(1, len(self.item._tainted))
         res = self.item.as_podio_dict(fields=self.item._tainted)
-        self.assertEqual("Bow of ship", res['name'][0]['value'])
+        self.assertEqual("Bow of ship", res['name'])
+
+    def test__setitem__textfield_none(self):
+        self.assertEqual(0, len(self.item._tainted))
+        self.item['name'] = None
+        # after setting the value, the number of tainted fields should go up.
+        self.assertEqual(1, len(self.item._tainted))
+        res = self.item.as_podio_dict(fields=self.item._tainted)
+        self.assertEqual([], res['name'])
 
     def test_as_podio_dict(self):
         res = self.item.as_podio_dict(fields=['name'])
-        self.assertEqual("Bow of boat", res['name'][0]['value'])
+        self.assertEqual("Bow of boat", res['name'])
 

@@ -285,9 +285,12 @@ class TextMediator(PodioFieldMediator):
         format: The format of the text, either plain, markdown or html
     """
     def update(self, field, value, field_param=None):
-        values = [{
-            'value': value.strip()
-        }]
+        if value is None:
+            values = []
+        else:
+            values = [{
+                'value': value.strip()
+            }]
         return values
 
     def fetch(self, field, field_param=None):
@@ -299,7 +302,12 @@ class TextMediator(PodioFieldMediator):
         return None
 
     def as_podio_dict(self, field):
-        return self.fetch(field)
+        values = field.get('values')
+        if values and len(values) > 0:
+            for value in values:
+                return value['value']
+        else:
+            return []
 
 
 class CategoryMediator(PodioFieldMediator):
@@ -473,8 +481,13 @@ def get_field_from_podio_json_list(item_json, external_id, app_config=None):
         for field in app_config['fields']:
             if field['external_id'] == external_id:
                 return field
-
-    raise KeyError('%s' % external_id)
+        # Only raise the KeyError if we have the app_config and can know for certain
+        # that the field does not exist.
+        raise KeyError('%s' % external_id)
+    item_id = item_json.get('item_id', 'n/a')
+    log.warning('Accessing field %s on item_id %s: Unknown of field exists or does '
+                'not contain a value. Returning value = None.' % (external_id, item_id))
+    return None
 
 
 def find_mediator_class(field):

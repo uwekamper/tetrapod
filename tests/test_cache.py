@@ -3,7 +3,7 @@ import os
 from unittest import TestCase
 
 from tetrapod.cache import (
-    CachedItemFactory
+    CachedItemStorage
 )
 
 
