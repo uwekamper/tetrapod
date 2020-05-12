@@ -208,19 +208,44 @@ class CachedItemStorage(object):
             INSERT INTO cached_apps(table_name, extra_fields, natural_key)
                 VALUES(?, ?, ?)
             """
-            self.conn.execute(
-                new_cache_sql,
-                (table_name, f"{','.join(extra_fields)}", f"{','.join(natural_key_list)}")
-            )
+            try:
+                self.conn.execute(
+                	new_cache_sql,
+                	(table_name, f"{','.join(extra_fields)}", f"{','.join(natural_key_list)}")
+            	)
+            except sqlite3.IntegrityError:
+                log.warning("Integrity Error in table_name = %s" % table_name)
+                update_cache_sql = """
+                UPDATE cached_apps SET 
+                       extra_fields = ? ,
+                       natural_key = ?
+                WHERE table_name = ?
+                """
+                self.conn.execute(
+                	update_cache_sql,
+                	(f"{','.join(extra_fields)}", f"{','.join(natural_key_list)}", table_name)
+            	)
+	    
         else:
             new_cache_sql = """
-                    INSERT INTO cached_apps(table_name, extra_fields)
-                        VALUES(?, ?)
-                    """
-            self.conn.execute(
-                new_cache_sql,
-                (table_name, f"{','.join(extra_fields)}")
-            )
+            INSERT INTO cached_apps(table_name, extra_fields)
+                VALUES(?, ?)
+            """
+            try:
+                self.conn.execute(
+                    new_cache_sql,
+                    (table_name, f"{','.join(extra_fields)}")
+                )
+            except sqlite3.IntegrityError:
+                update_cache_sql = """
+                UPDATE cached_apps SET 
+                       extra_fields = ?
+                WHERE table_name = ?
+                """
+                self.conn.execute(
+                	update_cache_sql,
+                	(f"{','.join(extra_fields)}", table_name)
+            	)
 
         # Build the actual table for the items.
         cols = [
