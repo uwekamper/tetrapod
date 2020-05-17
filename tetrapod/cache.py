@@ -85,8 +85,8 @@ class CachedItemStorage(object):
         table_name = f'podio_app_{app_id}'
 
         cursor = self.conn.cursor()
-        sql = """SELECT item_data FROM ? WHERE item_id = ?"""
-        vars = (table_name, item_id)
+        sql = "SELECT item_data FROM %s WHERE item_id = ?" % table_name
+        vars = (item_id,)
         cursor.execute(sql, vars)
         item_data = json.loads(cursor.fetchone()[0])
         cursor.close()
