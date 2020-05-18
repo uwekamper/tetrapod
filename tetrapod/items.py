@@ -357,7 +357,10 @@ class CategoryMediator(PodioFieldMediator):
         elif field_param == 'active':
             val = field.get('values', [None])[0]
             if val is not None:
-                return val['value']
+                try:
+                    return val['value']
+                except KeyError:
+                    return None
             else:
                 return None
         elif field_param == 'all':
