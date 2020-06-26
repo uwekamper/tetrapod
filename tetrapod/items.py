@@ -340,8 +340,10 @@ class CategoryMediator(PodioFieldMediator):
                     selected_opts.append(opt)
                 if isinstance(val, int) and opt['id'] == value:
                     selected_opts.append(opt)
-                    
-        return selected_opts
+
+        # Category field values are wrapped in a dictionary with a single key
+        # named 'value' (see docstring of this class) – heaven only knows why.
+        return [{'value': opt} for opt in selected_opts]
         
     def fetch(self, field, field_param=None):
         if field_param == 'choices':
@@ -383,7 +385,7 @@ class CategoryMediator(PodioFieldMediator):
                 return None
                 
     def as_podio_dict(self, field):
-        return [v['id'] for v in field.get('values', [])]
+        return [v['value']['id'] for v in field.get('values', [])]
 
 
 class EmailMediator(PodioFieldMediator):

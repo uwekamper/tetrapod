@@ -1,7 +1,12 @@
 import logging
 import json
 import sqlite3
-from collections import Iterable
+
+try:
+    from collections.abc import Iterable  # noqa
+except ImportError:
+    from collections import Iterable # noqa
+
 from typing import Union
 from tetrapod.helpers import iterate_resource
 from tetrapod.items import Item

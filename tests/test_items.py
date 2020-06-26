@@ -6,35 +6,89 @@ import datetime
 from tetrapod.items import (
     fetch_field,
     Item,
+    CategoryMediator,
 )
 
 
-class TestFetchField(TestCase):
+class ItemTestCase(TestCase):
+    """Abstract base class for anything that needs test_item.json to be tested."""
+
     def setUp(self):
+        super().setUp()
         json_path = os.path.join(os.path.dirname(__file__), 'test_item.json')
         with open(json_path, mode='r') as fh:
             self.test_item = json.load(fh)
 
+class TestCategoryMediator(ItemTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.field = self.test_item['fields'][7]
+        self.mediator = CategoryMediator()
+
+    def test_update_category_str(self):
+        value = 'Accepted'
+        res = self.mediator.update(self.field, value)
+        self.assertEqual(
+            [{'value': {
+                'status': 'active',
+                'text': 'Accepted',
+                'id': 2,
+                'color': 'DCEBD8'}
+            }],
+            res
+        )
+
+    def test_fetch_category(self):
+        self.assertEqual(
+            [(1, "Entered"), (2, "Accepted"), (3, "Rejected")],
+            self.mediator.fetch(self.field, field_param='choices')
+        )
+        self.assertEqual(
+            "Accepted",
+            self.mediator.fetch(self.field)
+        )
+        self.assertEqual(
+            "Accepted",
+            self.mediator.fetch(self.field, field_param='active')['text']
+        )
+        self.assertEqual(
+            2,
+            self.mediator.fetch(self.field, field_param='active')['id']
+        )
+        self.assertEqual(
+            "DCEBD8",
+            self.mediator.fetch(self.field, field_param='active')['color']
+        )
+
+
+    def test_as_podio_dict(self):
+        res = self.mediator.as_podio_dict(self.field)
+        self.assertEqual([2], res)
+
+
+class TestFetchField(ItemTestCase):
+
     def test_get_field_not_found(self):
-        self.assertEquals(
+        self.assertEqual(
             None,
             fetch_field('does_not_exist', self.test_item)
         )
 
     def test_get_field_with_underscore(self):
-        self.assertEquals(
+        self.assertEqual(
             'Go',
             fetch_field('do_it', self.test_item)
         )
 
     def test_get_text_field(self):
-        self.assertEquals(
+        self.assertEqual(
             "Bow of boat",
             fetch_field('name', self.test_item)
         )
 
     def test_get_text_field_multiline(self):
-        self.assertEquals(
+        self.assertEqual(
             "<p>There's something about knowing the bow from the stern that "
             "makes sense in regard to this project.</p>",
             fetch_field('description', self.test_item)
@@ -108,7 +162,7 @@ class TestItem(TestCase):
         self.item = Item(item_data=self.test_item)
 
     def test__getitem__(self):
-        self.assertEquals(
+        self.assertEqual(
             "Bow of boat",
             self.item['name']
         )
