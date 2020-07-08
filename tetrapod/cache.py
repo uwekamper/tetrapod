@@ -84,7 +84,7 @@ class CachedItemStorage(object):
             item = CachedItem(self, json.loads(found[0][0]))
             return item
         elif len(found) >= 2:
-            raise Exception('Natural keys must be unique: %s' % ','.join(found))
+            raise Exception('Natural keys must be unique: %s' % repr(found))
 
     def get_item(self, app_id: int, item_id: int):
         table_name = f'podio_app_{app_id}'
