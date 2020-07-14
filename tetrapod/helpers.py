@@ -1,9 +1,10 @@
-import os
 import math
-import time
-import datetime
 import logging
 
+from collections import UserList
+from functools import reduce
+
+from tetrapod.items import Item
 
 log = logging.getLogger(__name__)
 
@@ -48,8 +49,7 @@ def iterate_array(client, url, http_method='GET', limit=100, offset=0, params=No
         all_elements.extend(resp) 
     # print(f"array of {len(all_elements)}")
     return all_elements
-    
-    
+
 
 def iterate_resource(client, url, http_method='POST', limit=500, offset=0, params=None):
     """
@@ -108,3 +108,134 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
 
     log.debug("Got all items!")
     return all_items
+
+
+# We define intersection and union ourselves here,
+# so we don't have to depend on another module (e.g. fnc)
+def intersection(*args):
+    return reduce(lambda a, b: list(set(a) & set(b)), args)
+
+
+def union(*args):
+    return reduce(lambda a, b: list(set(a) | set(b)), args)
+
+
+class SearchableList(UserList):
+    """Represent a complete app, used with load_complete_app"""
+
+    def __init__(self, initlist=None):
+        super().__init__(initlist)
+        self.search_index = {}
+
+    # stop deleltion from List
+    def remove(self, s=None):
+        raise RuntimeError("Deletion not allowed")
+
+    # stop pop from List
+    def pop(self, s=None):
+        raise RuntimeError("Deletion not allowed")
+
+    def append(self, item: Item) -> None:
+        index = len(self.data)  # index of appended element at end of list
+        self.make_searchable(index, item)
+        super().append(item)
+
+    def insert(self, i: int, item: Item) -> None:
+        raise RuntimeError("Insert would mess up the search idx. Use .append()")
+
+    def make_searchable(self, index: int, item: Item):
+        """Create the searchable values for the item in the search index."""
+        for field in item.item_data['fields']:
+            external_id = field['external_id']
+            searchable_text = str(item[external_id]).strip().lower()
+            try:
+                index_for_field = self.search_index[external_id]
+            except KeyError:
+                index_for_field = {}
+                self.search_index[external_id] = index_for_field
+            if searchable_text in index_for_field.keys():
+                index_for_field[searchable_text] += [index]
+            else:
+                index_for_field[searchable_text] = [index]
+
+    SEARCH_AND = 1
+    SEARCH_OR = 2
+
+    def search_multiple(self, external_ids_and_search_terms: dict, mode=SEARCH_AND):
+        """
+        Example:
+        items = SearchableList()
+        mlp = items.search_multiple({'title': 'My little Pony', 'tag-line': 'Friendship is Magic'})
+
+        :param external_ids_and_search_terms: A dict that contains the external id
+        :param mode: AND and OR is available.
+           - AND: All of the search terms must be present (intersection of found items for
+            each search term)
+           - OR: At least one of the search terms must be present (union of the found items)
+        :return: List of items found or an empty list.
+        """
+        if len(self.data) == 0:
+            log.warning('Tried search in empty list.')
+            return []
+        for external_id in external_ids_and_search_terms.keys():
+            if external_id not in self.search_index.keys():
+                log.warning('Searching for unknown field "%s", field might be null for '
+                            'every item in this list or not exist at all.' % external_id)
+                if mode == self.SEARCH_AND:
+                    return []
+
+        results_indexes = []  # list of lists of indexes of items found
+        for external_id, search_term in external_ids_and_search_terms.items():
+            query = str(search_term).strip().lower()
+            field_data = self.search_index[external_id]
+            try:
+                index_list = field_data[query]  # returns a list of indexes
+                results_indexes.append(index_list)
+            except KeyError:
+                results_indexes.append([])
+        # the final result is the indexes that were found for every search term
+        if mode == self.SEARCH_AND:
+            final_result_indexes = list(intersection(*results_indexes))
+        elif mode == self.SEARCH_OR:
+            final_result_indexes = list(union(*results_indexes))
+
+        result_items = [self.data[idx] for idx in final_result_indexes]
+        return result_items
+
+    def search(self, external_id: str, look_for: str) -> list:
+        if len(self.data) == 0:
+            log.warning('Tried search in empty list.')
+            return []
+        if external_id not in self.search_index.keys():
+            log.warning('Searching for unknown field "%s", field might be null for '
+                        'every item in this list or not exist at all.' % external_id)
+            return []
+        query = str(look_for).strip().lower()
+        search_results = []
+        field_data = self.search_index[external_id]
+        try:
+            index_list = field_data[query]
+            # Use the sorted index
+            for index in sorted(index_list):
+                search_results.append(self.data[index])
+        except KeyError:
+            pass
+        return search_results
+
+    def search_first(self, external_id: str, look_for: str) -> Item:
+        """Do a search but only return the first found item or None if not found."""
+        items_found = self.search(external_id, look_for)
+        if len(items_found) < 1:
+            return None
+        else:
+            return items_found[0]
+
+
+def load_complete_app(podio, app_id):
+    url = f'https://api.podio.com/item/app/{app_id}/filter/'
+
+    payload = SearchableList()
+    for item in iterate_resource(podio, url, 'POST', limit=250):
+        payload.append(Item(item))
+
+    return payload
