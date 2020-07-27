@@ -134,6 +134,10 @@ class AppMediator(PodioFieldMediator):
       value: The id of the app item
     """
     def fetch(self, field, field_param=None):
+        # We return the full list of values that Podio provides
+        if field_param == 'values':
+            return [v['value'] for v in field.get('values', [])]
+        # Default case: Return just the item_id(s)
         items = [v['value']['item_id'] for v in field.get('values', [])]
         if not field_param:
             return items
