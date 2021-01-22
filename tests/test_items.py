@@ -145,6 +145,20 @@ class TestFetchField(ItemTestCase):
             datetime.datetime(2018, 7, 27, 1, 0),
             fetch_field('date__datetime', self.test_item)
         )
+        
+        self.assertEqual(
+            '2018-07-27 01:00:00',
+            fetch_field('date__start', self.test_item)
+        )
+        # item[‘date__start_datetime’]
+        self.assertEqual(
+            datetime.datetime(2018, 7, 27, 1, 0),
+            fetch_field('date__start_datetime', self.test_item)
+        )
+        self.assertEqual(
+            datetime.datetime(2018, 7, 28, 1, 0),
+            fetch_field('date__end_datetime', self.test_item)
+        )
 
     def test_fetch_embed_field(self):
         self.assertEqual(

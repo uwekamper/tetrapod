@@ -195,6 +195,20 @@ class DateMediator(PodioFieldMediator):
         if field_param is None:
             for value in field.get('values', []):
                 return value['start']
+        if field_param == 'start':
+            for value in field.get('values', []):
+                return value['start']
+        if field_param in ['start_datetime', 'startdatetime', 'start_dt', 'startdt']:
+            for value in field.get('values', []):
+                date_str = value['start']
+                return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+        if field_param == 'end':
+            for value in field.get('values', []):
+                return value['end']
+        if field_param in ['end_datetime', 'enddatetime', 'end_dt', 'enddt']:
+            for value in field.get('values', []):
+                date_str = value['end']
+                return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
         if field_param == 'datetime':
             for value in field.get('values', []):
                 date_str = value['start']
