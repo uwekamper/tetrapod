@@ -1,5 +1,6 @@
 import math
 import logging
+import mimetypes
 
 from collections import UserList
 from functools import reduce
@@ -84,6 +85,11 @@ def iterate_resource(client, url, http_method='POST', limit=500, offset=0, param
     all_items.extend(resp['items'])
 
     total = resp['total']
+    try: 
+        total = resp['filtered']
+    except KeyError:
+        pass
+
     log.debug('Getting items from offset: %d, total: %d' % (offset, total))
     steps_left = []
     if total > limit:
@@ -239,3 +245,18 @@ def load_complete_app(podio, app_id):
         payload.append(Item(item))
 
     return payload
+
+
+def upload_file(podio, item_id, raw_data, new_file_name):
+    log.info(f'Uploading and attaching file {new_file_name} to item {item_id}')
+    files = {'source': (new_file_name, raw_data, mimetypes.guess_type(new_file_name)[0])}
+    data = {'filename': new_file_name.encode('utf-8')}
+    upload_resp = podio.post('https://api.podio.com/file', data=data, files=files)
+    log.info(f"Upload response is: {upload_resp.status_code}, "
+             f"content(-repr): {repr(upload_resp.content)}")
+    upload_resp.raise_for_status()
+    new_file_id = upload_resp.json()['file_id']
+    attach_resp = podio.post('https://api.podio.com/file/%d/attach' % new_file_id,
+                             json={'ref_type': 'item', 'ref_id': item_id})
+    log.info(f"Attach response is: {attach_resp.status_code}, "
+             f"content(-repr): {repr(attach_resp.content)}")
