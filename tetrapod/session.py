@@ -40,5 +40,5 @@ def create_podio_session(credentials_file=None, credentials=None, check=True, ro
     return podio
 
 
-def create_app_auth_session(client_id:str, client_secret:str, app_id:int, app_token:str):
-    return podio_auth.make_app_auth_client(client_id, client_secret, app_id, app_token)
+def create_app_auth_session(client_id:str, client_secret:str, app_id:int, app_token:str, robust=False):
+    return podio_auth.make_app_auth_client(client_id, client_secret, app_id, app_token, robust=robust)
