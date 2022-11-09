@@ -250,7 +250,7 @@ def make_client(client_id, token, check=True, client_token=None, enable_robustne
     return client
 
 
-def make_app_auth_client(client_id, client_secret, app_id, app_token):
+def make_app_auth_client(client_id, client_secret, app_id, app_token, robust=False):
     token_resp = requests.post(APP_AUTH_TOKEN_URL, data={
         "grant_type": "app",
         "app_id": "%s" % app_id,
@@ -261,7 +261,7 @@ def make_app_auth_client(client_id, client_secret, app_id, app_token):
     token_resp.raise_for_status()
     token = token_resp.json()
 
-    client = OAuth2Session(client_id, token=token)
+    client = PodioOAuth2Session(client_id, token=token, enable_robustness=robust)
     return client
 
 
