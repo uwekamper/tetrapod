@@ -29,7 +29,11 @@ def try_environment_token():
 
 
 def create_podio_session(credentials_file=None, credentials=None, check=True, robust=False):
-    token = try_environment_token()
+    token = None
+    if credentials is not None:
+        token = credentials
+    else:
+        token = try_environment_token()
     if token is None:
         log.info('Loading OAuth2 token from credentials file.')
         if credentials_file is None:
