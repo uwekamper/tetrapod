@@ -4,7 +4,7 @@ setup(
     name='tetrapod',
     version='0.1',
     py_modules='tetrapod',
-    install_requires=['Click', 'requests', 'requests-oauthlib', 'python-dateutil>=2.8.0' ],
+    install_requires=['Click', 'requests', 'requests-oauthlib', 'python-dateutil>=2.8.2' ],
     entry_points='''
         [console_scripts]
         tpod=tetrapod.cli:cli
